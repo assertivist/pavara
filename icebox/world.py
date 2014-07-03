@@ -26,6 +26,8 @@ class World (object):
         self.objects[obj.name] = obj
         obj.np = self.render.attach_new_node(obj.node)
         if isinstance(obj.node, BulletRigidBodyNode):
+            if self.is_client:
+                obj.node.set_mass(0.0)
             self.bullet_world.attach_rigid_body(obj.node)
         if isinstance(obj.node, BulletGhostNode):
             self.bullet_world.attach_ghost(obj.node)
@@ -65,18 +67,19 @@ class World (object):
         self.render.setShaderAuto()
         self.render.node().setAttrib(ColorAttrib.makeVertex())
 
-        debug_node = BulletDebugNode('Debug')
-        debug_node.showWireframe(True)
-        debug_node.showConstraints(True)
-        debug_node.showBoundingBoxes(False)
-        debug_node.showNormals(True)
-        debug_np = self.render.attach_new_node(debug_node)
-        debug_np.show()
-        self.bullet_world.setDebugNode(debug_np.node())
+        if DEBUG:
+            debug_node = BulletDebugNode('Debug')
+            debug_node.showWireframe(True)
+            debug_node.showConstraints(True)
+            debug_node.showBoundingBoxes(False)
+            debug_node.showNormals(True)
+            debug_np = self.render.attach_new_node(debug_node)
+            debug_np.show()
+            self.bullet_world.setDebugNode(debug_np.node())
 
     def update(self, dt):
 
+        self.bullet_world.doPhysics(dt)
         if not self.is_client:
-            self.bullet_world.doPhysics(dt)
             for obj in self.updatables:
                 obj.update(dt)
