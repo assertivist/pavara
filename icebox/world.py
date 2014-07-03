@@ -43,11 +43,11 @@ class World (object):
         tank = Tank(name)
         self.attach(tank)
         self.updatables.add(tank)
-        tank.move(pos)        
+        tank.move(pos)
 
     def init_visual(self):
         self.objects_node = NodePath('VisibleObjects')
-        
+
         alight = AmbientLight('ambient')
         alight.set_color(VBase4(0.6, 0.6, 0.6, 1))
         node = self.render.attach_new_node(alight)
@@ -74,13 +74,9 @@ class World (object):
         debug_np.show()
         self.bullet_world.setDebugNode(debug_np.node())
 
-        #self.objects_node.setColorOff()
-        #self.objects_node.setShaderAuto()
-        #self.objects_node.node().setAttrib(ColorAttrib.makeVertex())
-       # self.objects_node.reparent_to(self.render)
-
     def update(self, dt):
+
         if not self.is_client:
+            self.bullet_world.doPhysics(dt)
             for obj in self.updatables:
                 obj.update(dt)
-        self.bullet_world.doPhysics(dt)

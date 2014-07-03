@@ -72,12 +72,15 @@ class Block(WorldObject):
         self.node = BulletRigidBodyNode(self.name)
         self.node.set_mass(1.0)
         self.node.addShape(shape)
+        self.pos = (0,0,0)
 
     def update(self, dt):
-        if self.attached:
+        new_pos = self.np.get_pos()
+        if not new_pos == self.pos and self.attached:
             self.moved = True
+        self.pos = new_pos
 
-class Arena(WorldObject):    
+class Arena(WorldObject):
     def __init__(self, name=None):
         super(Arena, self).__init__(name)
 
