@@ -11,11 +11,11 @@ class Icebox(ShowBase):
         self.render.setShaderAuto()
         self.setBackgroundColor(0, 0, 0)
         #self.enableParticles()
-        
+
         render.setAntialias(AntialiasAttrib.MAuto)
         self.cam.set_pos(50,25,50)
         self.cam.look_at(0,0,0)
-        c = Clock(self)
+        c = Clock(self, True)
         taskMgr.add(c.update, 'ClockTask')
 
 if __name__ == '__main__':

@@ -26,6 +26,8 @@ class World (object):
         self.objects[obj.name] = obj
         obj.np = self.render.attach_new_node(obj.node)
         if isinstance(obj.node, BulletRigidBodyNode):
+            if self.is_client:
+                obj.node.set_mass(0.0)
             self.bullet_world.attach_rigid_body(obj.node)
         if isinstance(obj.node, BulletGhostNode):
             self.bullet_world.attach_ghost(obj.node)
@@ -43,11 +45,11 @@ class World (object):
         tank = Tank(name)
         self.attach(tank)
         self.updatables.add(tank)
-        tank.move(pos)        
+        tank.move(pos)
 
     def init_visual(self):
         self.objects_node = NodePath('VisibleObjects')
-        
+
         alight = AmbientLight('ambient')
         alight.set_color(VBase4(0.6, 0.6, 0.6, 1))
         node = self.render.attach_new_node(alight)
@@ -65,22 +67,19 @@ class World (object):
         self.render.setShaderAuto()
         self.render.node().setAttrib(ColorAttrib.makeVertex())
 
-        debug_node = BulletDebugNode('Debug')
-        debug_node.showWireframe(True)
-        debug_node.showConstraints(True)
-        debug_node.showBoundingBoxes(False)
-        debug_node.showNormals(True)
-        debug_np = self.render.attach_new_node(debug_node)
-        debug_np.show()
-        self.bullet_world.setDebugNode(debug_np.node())
-
-        #self.objects_node.setColorOff()
-        #self.objects_node.setShaderAuto()
-        #self.objects_node.node().setAttrib(ColorAttrib.makeVertex())
-       # self.objects_node.reparent_to(self.render)
+        if DEBUG:
+            debug_node = BulletDebugNode('Debug')
+            debug_node.showWireframe(True)
+            debug_node.showConstraints(True)
+            debug_node.showBoundingBoxes(False)
+            debug_node.showNormals(True)
+            debug_np = self.render.attach_new_node(debug_node)
+            debug_np.show()
+            self.bullet_world.setDebugNode(debug_np.node())
 
     def update(self, dt):
+
+        self.bullet_world.doPhysics(dt)
         if not self.is_client:
             for obj in self.updatables:
                 obj.update(dt)
-        self.bullet_world.doPhysics(dt)
