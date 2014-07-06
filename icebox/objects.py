@@ -35,13 +35,13 @@ class WorldObject(object):
         hpr = self.np.get_hpr()
         if not self.moved:
             return
-        datagram.addString(self.name)
-        datagram.addFloat32(pos.x)
-        datagram.addFloat32(pos.y)
-        datagram.addFloat32(pos.z)
-        datagram.addFloat32(hpr.x)
-        datagram.addFloat32(hpr.y)
-        datagram.addFloat32(hpr.z)
+        datagram.add_string(self.name)
+        datagram.add_float(pos.x)
+        datagram.add_float(pos.y)
+        datagram.add_float(pos.z)
+        datagram.add_float(hpr.x)
+        datagram.add_float(hpr.y)
+        datagram.add_float(hpr.z)
         self.moved = False
 
     def __repr__(self):

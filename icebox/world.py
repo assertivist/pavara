@@ -1,4 +1,5 @@
 from icebox.objects import Arena, Block, Tank
+from icebox.constants import *
 from panda3d.core import VBase4, AmbientLight, NodePath
 from panda3d.core import ColorAttrib, DirectionalLight, Vec4, Vec3
 from panda3d.bullet import BulletWorld, BulletPlaneShape, BulletRigidBodyNode, BulletGhostNode, BulletDebugNode
