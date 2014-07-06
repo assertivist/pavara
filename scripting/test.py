@@ -126,6 +126,7 @@ def fib(n):
         self.assertEqual(result, 5)
         result = env.lookup('fib').call(5)
         self.assertEqual(result, 8)
+
     def test_not_allow_normal_pyfuncs_to_be_called(self):
         _, env = safe_eval("""
 def naughty(c):
@@ -139,6 +140,7 @@ def naughty(c):
         except:
             pass
         self.assertTrue(exceptionthrown)
+
     def test_allow_only_approved_functions_to_be_called(self):
         import math
         _, env = safe_eval("""
@@ -146,6 +148,17 @@ def okay():
     return ceil(1.1)
 """, whitelist={'ceil': math.ceil})
         self.assertEqual(env.lookup('okay').call(), 2.0)
+
+    def test_not_allow_normal_pyfuncs_to_assigned_in_WrappedFunctions(self):
+        import math
+        _, env = safe_eval("""
+def naughty(c):
+    ceil.f = c.open
+    return ceil.f
+""", whitelist={'ceil': math.ceil})
+        c = C()
+        result = env.lookup('naughty').call(c)
+        self.assertNotEqual(result, open)
 
 if __name__ == '__main__':
     unittest.main()

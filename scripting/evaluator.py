@@ -1,18 +1,24 @@
 import ast
 
 class SafePyFunction(object):
-    def __init__(self, args, body, env, whitelist):
+    def __init__(self, args, body, env):
         self.args = args
         self.body = body
         self.env = env
-        self.whitelist = whitelist
     def call(self, *argvals):
         env = self.env.push()
         for k, v in zip(self.args.args, argvals):
             env.assign(k.id, v)
 
-        evaluate(self.body, env, self.whitelist)
+        evaluate(self.body, env)
         return env.returnval
+
+class WrappedFunction(object):
+    def __init__(self, f):
+        self.f = f
+
+    def call(self, *argvals):
+        return self.f(*argvals)
 
 class Env(object):
     def __init__(self, variables=None):
@@ -44,11 +50,11 @@ class Env(object):
     def push(self):
         return Env(self.variables + [{}])
 
-def assign(tree, env, whitelist, val):
+def assign(tree, env, val):
     if isinstance(tree, ast.Name):
         env.assign(tree.id, val)
     elif isinstance(tree, ast.Attribute):
-        obj = evaluate(tree.value, env, whitelist)
+        obj = evaluate(tree.value, env)
         setter = 'set_' + tree.attr
         if hasattr(obj, 'set_' + tree.attr):
             getattr(obj, setter)(val)
@@ -57,32 +63,32 @@ def assign(tree, env, whitelist, val):
     else:
         print 'unsupported assignment', tree
 
-def evaluate(tree, env, whitelist):
+def evaluate(tree, env):
     if isinstance(tree, ast.Module):
-        return evaluate(tree.body, env, whitelist)
+        return evaluate(tree.body, env)
     elif isinstance(tree, list):
         results = []
         for statement in tree:
             if isinstance(statement, ast.Expr):
-                results.append(evaluate(statement.value, env, whitelist))
+                results.append(evaluate(statement.value, env))
             elif isinstance(statement, ast.FunctionDef):
-                env.assign(statement.name, SafePyFunction(statement.args, statement.body, env, whitelist))
+                env.assign(statement.name, SafePyFunction(statement.args, statement.body, env))
             elif isinstance(statement, ast.Assign):
-                v = evaluate(statement.value, env, whitelist)
+                v = evaluate(statement.value, env)
                 if isinstance(v, int) or isinstance(v, float) or isinstance(v, SafePyFunction):
-                    assign(statement.targets[0], env, whitelist, v)
+                    assign(statement.targets[0], env, v)
                 else:
                     print "unsafe assignment rejected", v
             elif isinstance(statement, ast.If):
-                test = evaluate(statement.test, env, whitelist)
+                test = evaluate(statement.test, env)
                 if test:
-                    evaluate(statement.body, env, whitelist)
+                    evaluate(statement.body, env)
                 else:
-                    evaluate(statement.orelse, env, whitelist)
+                    evaluate(statement.orelse, env)
                 if env.returnval is not None:
                     return results
             elif isinstance(statement, ast.Return):
-                env.returnval = evaluate(statement.value, env, whitelist)
+                env.returnval = evaluate(statement.value, env)
                 return results
             else:
                 print statement
@@ -90,8 +96,8 @@ def evaluate(tree, env, whitelist):
     elif isinstance(tree, ast.Name):
         return env.lookup(tree.id)
     elif isinstance(tree, ast.BinOp):
-        left = evaluate(tree.left, env, whitelist)
-        right = evaluate(tree.right, env, whitelist)
+        left = evaluate(tree.left, env)
+        right = evaluate(tree.right, env)
         if isinstance(tree.op, ast.Add):
             return left + right
         elif isinstance(tree.op, ast.Sub):
@@ -101,11 +107,11 @@ def evaluate(tree, env, whitelist):
     elif isinstance(tree, ast.Num):
         return tree.n
     elif isinstance(tree, ast.Attribute):
-        obj = evaluate(tree.value, env, whitelist)
+        obj = evaluate(tree.value, env)
         return getattr(obj, tree.attr)
     elif isinstance(tree, ast.Compare):
-        left = evaluate(tree.left, env, whitelist)
-        right = evaluate(tree.comparators[0], env, whitelist)
+        left = evaluate(tree.left, env)
+        right = evaluate(tree.comparators[0], env)
         if isinstance(tree.ops[0], ast.Eq):
             return left == right
         elif isinstance(tree.ops[0], ast.LtE):
@@ -113,12 +119,11 @@ def evaluate(tree, env, whitelist):
         else:
             print 'unsupported compare', tree.ops[0]
     elif isinstance(tree, ast.Call):
-        if isinstance(tree.func, ast.Name):
-            if not env.contains(tree.func.id) and tree.func.id in whitelist:
-                return whitelist[tree.func.id](*[evaluate(arg, env, whitelist) for arg in tree.args])
-        f = evaluate(tree.func, env, whitelist)
+        f = evaluate(tree.func, env)
         if isinstance(f, SafePyFunction):
-            return f.call(*[evaluate(arg, env, whitelist) for arg in tree.args])
+            return f.call(*[evaluate(arg, env) for arg in tree.args])
+        elif isinstance(f, WrappedFunction):
+            return f.call(*[evaluate(arg, env) for arg in tree.args])
         elif hasattr(f, '__call__'):
             raise Exception('unsafe function call', f)
     else:
@@ -127,7 +132,8 @@ def evaluate(tree, env, whitelist):
 def safe_eval(script, env=None, whitelist=None):
     if env is None:
         env = Env()
-    if whitelist is None:
-        whitelist = {}
-    return evaluate(ast.parse(script), env, whitelist), env
+    if whitelist is not None:
+        for name, f in whitelist.items():
+            env.assign(name, WrappedFunction(f))
+    return evaluate(ast.parse(script), env), env
 
