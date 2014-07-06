@@ -19,7 +19,7 @@ class Server(asyncore.dispatcher):
 
         self.last_pid = 0
         self.last_txid = 0
-        taskMgr.doMethodLater(0.001, self.server_task, 'serverManagementTask')
+        taskMgr.doMethodLater(0.03, self.server_task, 'serverManagementTask')
         print 'server up'
         self.buffer = ""
 
