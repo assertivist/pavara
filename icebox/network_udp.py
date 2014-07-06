@@ -1,12 +1,14 @@
+
 import asyncore, socket
 from panda3d.core import *
 from pandac.PandaModules import *
+from icebox.server_packet import ServerPacket
 class Server(asyncore.dispatcher):
     def __init__(self, world, port):
         asyncore.dispatcher.__init__(self)
 
         self.create_socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.set_reuse_addr()
+        #self.set_reuse_addr()
         self.bind(("127.0.0.1", port))
         self.address = self.socket.getsockname()
         #self.listen(5)
@@ -15,7 +17,7 @@ class Server(asyncore.dispatcher):
 
         self.connections = set()
         self.connections_to_remove = []
-        self.players = {}
+        self.players = {}   
 
         self.last_pid = 0
         self.last_txid = 0
@@ -35,6 +37,7 @@ class Server(asyncore.dispatcher):
             try:
                 self.sendto(update.get_datagram(), conn)
             except:
+                raise
                 self.connections_to_remove.append(conn)
 
         for conn in self.connections_to_remove:
@@ -44,52 +47,32 @@ class Server(asyncore.dispatcher):
         asyncore.loop(count = 1, timeout = 0)
         return task.again
 
-    def handle_connect(self):
-        print "Client connected??"
-        pass
-
     def handle_read(self):
-        data, addr = self.recvfrom(2048)
-        if (addr) not in self.connections:
-            self.connections.add(addr)
+        try:
+            data, addr = self.recvfrom(2048)
+            print data
+            if addr not in self.connections:
+                self.connections.add(addr)
+        except Exception:
+            """Windows throws many exceptions when 
+            attempting to recvfrom a connection that has 
+            closed. I am not sure how to close the 
+            connection without closing the whole socket
+            which isn't necessary afaict"""
+            pass 
 
     def handle_close(self):
         return
 
-DGRAM_DELIMITER = "^"
 
-class ServerPacket(object):
-    def __init__(self, values = None):
-        if values:
-            self.values = self.read_values(values)
-        else:
-            self.values = []
+class ServerHandler(asyncore.dispatcher_with_send):
 
-    def add_int(self, intval):
-        self.values.append(intval)
+    def handle_read(self):
+        print data
+        data, addr = self.recvfrom(2048)
+        if(addr not in self.server.connections):
+            self.server.connections.add(addr)
 
-    def get_int(self):
-        val = self.values.pop(0)
-        return int(val)
-
-    def add_float(self, floatval):
-        self.values.append(floatval)
-
-    def get_float(self):
-        val = self.values.pop(0)
-        return float(val)
-
-    def add_string(self, stringval):
-        self.values.append(stringval)
-
-    def get_string(self):
-        return self.values.pop(0)
-
-    def read_values(self, datagram):
-        return datagram.split(DGRAM_DELIMITER)
-
-    def get_datagram(self):
-        return reduce(lambda x,y: str(x)+DGRAM_DELIMITER+str(y), self.values)
 
 class Client(asyncore.dispatcher_with_send):
     def __init__(self, world, host, port):
@@ -113,14 +96,12 @@ class Client(asyncore.dispatcher_with_send):
 
     def handle_read(self):
         data = self.recv(2048)
-        #print data
+
         update = ServerPacket(values = data)
 
-        #print update.values
         txid = update.get_int()
         print txid
         num_objects = update.get_int()
-        #print txid, num_objects
 
         for i in range(num_objects):
             name = update.get_string()
@@ -150,4 +131,5 @@ class Client(asyncore.dispatcher_with_send):
     def client_task(self, task):
         asyncore.loop(count = 1, timeout = 0)
         return task.again
+
 
