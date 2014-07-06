@@ -110,5 +110,42 @@ def conditional():
         result = env.lookup('conditional').call()
         self.assertEqual(result, 2)
 
+    def test_support_calling_safepyfuncs(self):
+        _, env = safe_eval("""
+def fib(n):
+    if n <= 1:
+        return 1
+    else:
+        return fib(n-1) + fib(n-2)
+""")
+        result = env.lookup('fib').call(2)
+        self.assertEqual(result, 2)
+        result = env.lookup('fib').call(3)
+        self.assertEqual(result, 3)
+        result = env.lookup('fib').call(4)
+        self.assertEqual(result, 5)
+        result = env.lookup('fib').call(5)
+        self.assertEqual(result, 8)
+    def test_not_allow_normal_pyfuncs_to_be_called(self):
+        _, env = safe_eval("""
+def naughty(c):
+    c.open('yourcreditcardinfo.XLS')
+""")
+        c = C()
+        exceptionthrown = True
+        try:
+            env.lookup('naughty').call(c)
+            exceptionthrown = False
+        except:
+            pass
+        self.assertTrue(exceptionthrown)
+    def test_allow_only_approved_functions_to_be_called(self):
+        import math
+        _, env = safe_eval("""
+def okay():
+    return ceil(1.1)
+""", whitelist={'ceil': math.ceil})
+        self.assertEqual(env.lookup('okay').call(), 2.0)
+
 if __name__ == '__main__':
     unittest.main()
