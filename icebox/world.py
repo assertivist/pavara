@@ -1,4 +1,4 @@
-from icebox.objects import Arena, Block, Tank
+from icebox.objects import Arena, Block, Tank, Projectile
 from icebox.constants import *
 from panda3d.core import VBase4, AmbientLight, NodePath
 from panda3d.core import ColorAttrib, DirectionalLight, Vec4, Vec3
@@ -10,17 +10,19 @@ class World (object):
         self.objects = {}
         self.updatables = set()
         self.render = showbase.render
-
+        self.curr_blocks = 0
         self.bullet_world = BulletWorld()
 
         if is_client:
             self.init_visual()
-        else:
-            self.bullet_world.setGravity(Vec3(0, -9.81, 0))
+        #else:
+        self.bullet_world.setGravity(Vec3(0, -9.81, 0))
 
         self.arena = Arena('arena')
         self.attach(self.arena)
         self.arena.np.set_pos(0,0,0)
+        self.updatables_to_add = []
+        self.updatables_to_remove = []
 
     def attach(self, obj):
         assert(obj.name not in self.objects)
@@ -34,19 +36,33 @@ class World (object):
             self.bullet_world.attach_ghost(obj.node)
         if self.is_client:
             NodePath(obj.geom).reparent_to(obj.np)
+        obj.world = self
         obj.attached = True
 
-    def add_block(self, pos, name=None):
+    def add_block(self, pos, name = None):
         block = Block(name)
         self.attach(block)
         self.updatables.add(block)
         block.move(pos)
 
-    def add_tank(self, pos, name=None):
-        tank = Tank(name)
+    def add_tank(self, pos, rot, name = None):
+        tank = Tank(RED_COLOR, name)
         self.attach(tank)
         self.updatables.add(tank)
         tank.move(pos)
+        tank.rotate([rot, 0, 0])
+        return tank
+
+    def add_proj(self, color, pos, rot, speed_pitch, owner, name = None):
+        proj = Projectile(color, name = name)
+        self.attach(proj)
+        #self.updatables.add(proj)
+        self.updatables_to_add.append(proj)
+        proj.move(pos)
+        proj.rotate([rot, 0, 0])
+        if not self.is_client:
+            v = self.render.get_relative_vector(proj.np, Vec3(0, 0, 1))
+            proj.node.applyCentralImpulse(v*(24 + (12 * speed_pitch)))
 
     def init_visual(self):
         self.objects_node = NodePath('VisibleObjects')
@@ -78,9 +94,30 @@ class World (object):
             debug_np.show()
             self.bullet_world.setDebugNode(debug_np.node())
 
-    def update(self, dt):
+    def remove(self, obj):
+        self.updatables_to_remove.append(obj)
 
+        obj.np.detach_node()
+        obj.np.remove_node()
+        if(isinstance(obj.node, BulletGhostNode)):
+            self.bullet_world.remove_ghost(obj.node)
+        if(isinstance(obj.node, BulletRigidBodyNode)):
+            self.bullet_world.remove_rigid_body(obj.node)
+        obj.attached = False
+        obj.world = False
+        
+
+    def update(self, dt):
         self.bullet_world.doPhysics(dt)
-        if not self.is_client:
-            for obj in self.updatables:
+        for obj in self.updatables:
                 obj.update(dt)
+
+        if len(self.updatables_to_remove) > 0:
+            for updatable in self.updatables_to_remove:
+                self.updatables.remove(updatable)
+            self.updatables_to_remove = []
+
+        if len(self.updatables_to_add) > 0:
+            for updatable in self.updatables_to_add:
+                self.updatables.add(updatable)
+            self.updatables_to_add = []

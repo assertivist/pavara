@@ -16,7 +16,6 @@ class Icebox(ShowBase):
         self.cam.set_pos(50,25,50)
         self.cam.look_at(0,0,0)
         c = Clock(self, True)
-        taskMgr.add(c.update, 'ClockTask')
 
 if __name__ == '__main__':
     loadPrcFile('panda_config.prc')

@@ -27,6 +27,13 @@ class ServerPacket(object):
     def get_string(self):
         return self.values.pop(0)
 
+    def add_bool(self, boolval):
+        self.values.append(int(boolval))
+
+    def get_bool(self):
+        val = self.values.pop(0)
+        return bool(int(val))
+
     def read_values(self, datagram):
         return datagram.split(DGRAM_DELIMITER)
 

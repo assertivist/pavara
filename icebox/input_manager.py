@@ -9,7 +9,7 @@ class KeyMaps(object):
                ]
 
 class InputManager(object):
-    def __init__(self, showbase, localplayer, client):
+    def __init__(self, showbase, client):
         self.key_map = {'left': 0
                       , 'right': 0
                       , 'forward': 0
@@ -20,13 +20,13 @@ class InputManager(object):
         for key,cmd in KeyMaps.default:
             showbase.accept(key, self.set_key, [cmd, 1])
             showbase.accept(key+"-up", self.set_key, [cmd, 0])
-        self.local_player = localplayer
+        self.client = client
 
     def set_key(self, key, value):
         self.key_map[key] = value
-        client.send(key, value)
+        self.client.send(key, value)
 
     def update(self, dt):
         pass
-        for mapping in KeyMaps.default:
-            self.local_player.handle_command(mapping[1], self.key_map[mapping[1]])
+        #for mapping in KeyMaps.default:
+            #self.local_player.handle_command(mapping[1], self.key_map[mapping[1]])

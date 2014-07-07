@@ -4,15 +4,23 @@ from twisted.internet import reactor
 from panda3d.core import *
 from pandac.PandaModules import *
 from icebox.server_packet import ServerPacket
+from icebox.constants import *
 
-import signal
-
-def die(signal, frame):
-    reactor.stop()
-    exit()
-signal.signal(signal.SIGINT, die)
+import signal, random
 
 FPS = 60.0
+
+class Player (object):
+    def __init__(self, pid, tank):
+        self.pid = pid
+        self.tank = tank
+
+    def __repr__(self):
+        return 'Player %s' % self.pid
+
+    def handle_command(self, direction, pressed):
+        print 'PLAYER %s GOT CMD %s %s' % (self.pid, direction, pressed)
+        self.tank.handle_command(direction, pressed)
 
 class Server(object):
     def __init__(self, world, port):
@@ -24,8 +32,8 @@ class Server(object):
 class ServerDatagramProtocol(DatagramProtocol):
     def __init__(self, world):
         self.world = world
-        #DatagramProtocol.__init__(self)
         self.connections = set()
+        self.players = {}
         self.last_pid = 0
         self.last_txid = 0
         taskMgr.doMethodLater(0.03, self.server_task, 'serverManagementTask')
@@ -33,7 +41,20 @@ class ServerDatagramProtocol(DatagramProtocol):
     def datagramReceived(self, data, addr):
         print data, addr
         if addr not in self.connections:
-            self.connections.add(addr)
+            self.add_player(addr)
+        #receive input from client
+        player = self.players[addr]
+        dgram = ServerPacket(values = data)
+        command = dgram.get_string()
+        value = dgram.get_bool()
+        player.handle_command(command, value)
+
+    def add_player(self, addr):
+        self.connections.add(addr)
+        self.last_pid += 1
+        tank = self.world.add_tank([random.randint(0,50), 1, random.randint(0,50)], random.randint(0, 359))
+        self.players[addr] = Player(self.last_pid, tank)
+
 
     def server_task(self, task):
         update = ServerPacket()
@@ -50,28 +71,42 @@ class ServerDatagramProtocol(DatagramProtocol):
 
 class Client(object):
     def __init__(self, world, host, port):
-        c = ClientDatagramProtocol(world, host, port)
+        self.datagram_protocol = ClientDatagramProtocol(world, host, port)
         LoopingCall(taskMgr.step).start(1/FPS)
-        reactor.listenUDP(0, c)
+        reactor.listenUDP(0, self.datagram_protocol)
+
+    def run(self):
         reactor.run()
 
 class ClientDatagramProtocol(DatagramProtocol):
     def __init__(self, world, host, port):
-        #DatagramProtocol.__init__(self)
         self.world = world
         self.host = host
         self.port = port
+        self.last_txid = 0
         #taskMgr.doMethodLater(0.001, self.client_task, 'clientUpdateTask')
 
     def startProtocol(self):
         self.transport.connect(self.host, self.port)
-        self.transport.write("hello")
+        self.transport.write("hello^1")
+
+
+    def send(self, key, value):
+        input_dgram = ServerPacket()
+        input_dgram.add_string(key)
+        input_dgram.add_bool(value)
+        self.transport.write(input_dgram.get_datagram())
 
     def datagramReceived(self, data, addr):
         update = ServerPacket(values = data)
-
+        #print data
         txid = update.get_int()
-        print txid
+        if txid != self.last_txid+1:
+            if self.last_txid == 0:
+                print "First packet: ", txid
+            else:
+                print "Lost packets: ", self.last_txid, " -> ", txid
+        self.last_txid = txid
         num_objects = update.get_int()
 
         for i in range(num_objects):
@@ -83,9 +118,11 @@ class ClientDatagramProtocol(DatagramProtocol):
             p = update.get_float()
             r = update.get_float()
             if name.startswith('Tank') and name not in self.world.objects:
-                self.world.add_tank([0,0,0], name=name)
+                self.world.add_tank([0,0,0], 0, name = name)
             if name.startswith('Block') and name not in self.world.objects:
-                self.world.add_block([0,0,0], name=name)
+                self.world.add_block([0,0,0], name = name)
+            if name.startswith('Projectile') and name not in self.world.objects:
+                self.world.add_proj(GREEN_COLOR, [0, 0, 0], 0, 0, None, name = name)
             obj = self.world.objects.get(name)
             if obj:
                 obj.move((x, y, z))
@@ -94,6 +131,6 @@ class ClientDatagramProtocol(DatagramProtocol):
     def connectionRefused(self):
         print "Connection was refused"
 
-    def client_task(self):
+    def client_task(self, task):
 
         return task.again
