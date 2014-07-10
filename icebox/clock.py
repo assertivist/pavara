@@ -19,7 +19,6 @@ class Clock (object):
             self.input_manager = InputManager(showbase, self.client.datagram_protocol)
             self.client.run() #blocks
         else:
-            taskMgr.doMethodLater(5, self.drop_block, 'drop_block_task')
             self.server = Server(self.world, 23000) #blocks
 
             
@@ -29,8 +28,3 @@ class Clock (object):
         self.world.update(dt)
         return task.cont
 
-    def drop_block(self, task):
-        if self.world.curr_blocks < MAX_BLOCKS:
-            self.world.add_block([0,25,0])
-            self.world.curr_blocks += 1
-        return task.again

@@ -19,7 +19,7 @@ class WorldObject(object):
         pass
 
     def move(self, pos):
-        assert(self.attached)
+        #assert(self.attached)
         self.moved = True
         self.np.set_pos(*pos)
 
@@ -29,7 +29,7 @@ class WorldObject(object):
         self.np.set_fluid_pos(self.np, pos[0], pos[1], pos[2])
 
     def rotate(self, hpr):
-        assert(self.attached)
+        #assert(self.attached)
         self.moved = True
         self.np.set_hpr(*hpr)
 
@@ -155,7 +155,10 @@ class Block(WorldObject):
         if not new_pos == self.pos and self.attached:
             self.moved = True
         self.pos = new_pos
-        if self.pos.x > 50 or self.pos.y > 50 or self.pos.z > 50:
+        threshold = 50
+        if self.world.is_client:
+            threshold -= 1
+        if abs(self.pos.x) > threshold or abs(self.pos.y) > threshold or abs(self.pos.z) > threshold:
             self.world.curr_blocks -= 1
             self.world.remove(self)
 

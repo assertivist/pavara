@@ -21,16 +21,16 @@ class World (object):
         self.arena = Arena('arena')
         self.attach(self.arena)
         self.arena.np.set_pos(0,0,0)
-        self.updatables_to_add = []
-        self.updatables_to_remove = []
+        self.updatables_to_add = {}
+        self.updatables_to_remove = {}
 
     def attach(self, obj):
         assert(obj.name not in self.objects)
         self.objects[obj.name] = obj
         obj.np = self.render.attach_new_node(obj.node)
         if isinstance(obj.node, BulletRigidBodyNode):
-            if self.is_client:
-                obj.node.set_mass(0.0)
+            #if self.is_client:
+                #obj.node.set_mass(0.0)
             self.bullet_world.attach_rigid_body(obj.node)
         if isinstance(obj.node, BulletGhostNode):
             self.bullet_world.attach_ghost(obj.node)
@@ -40,6 +40,7 @@ class World (object):
         obj.attached = True
 
     def add_block(self, pos, name = None):
+        self.curr_blocks += 1
         block = Block(name)
         self.attach(block)
         self.updatables.add(block)
@@ -56,8 +57,7 @@ class World (object):
     def add_proj(self, color, pos, rot, speed_pitch, owner, name = None):
         proj = Projectile(color, name = name)
         self.attach(proj)
-        #self.updatables.add(proj)
-        self.updatables_to_add.append(proj)
+        self.updatables_to_add[proj.name] = proj
         proj.move(pos)
         proj.rotate([rot, 0, 0])
         if not self.is_client:
@@ -95,7 +95,7 @@ class World (object):
             self.bullet_world.setDebugNode(debug_np.node())
 
     def remove(self, obj):
-        self.updatables_to_remove.append(obj)
+        self.updatables_to_remove[obj.name] = obj
 
         obj.np.detach_node()
         obj.np.remove_node()
@@ -108,16 +108,20 @@ class World (object):
         
 
     def update(self, dt):
+
         self.bullet_world.doPhysics(dt)
         for obj in self.updatables:
-                obj.update(dt)
+            obj.update(dt)
 
         if len(self.updatables_to_remove) > 0:
-            for updatable in self.updatables_to_remove:
+            for key, updatable in self.updatables_to_remove.items():
                 self.updatables.remove(updatable)
-            self.updatables_to_remove = []
+            self.updatables_to_remove = {}
 
         if len(self.updatables_to_add) > 0:
-            for updatable in self.updatables_to_add:
+            for key, updatable in self.updatables_to_add.items():
                 self.updatables.add(updatable)
-            self.updatables_to_add = []
+            self.updatables_to_add = {}
+
+        if self.curr_blocks < MAX_BLOCKS:
+            self.add_block([0,25,0])

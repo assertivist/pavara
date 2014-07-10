@@ -1,4 +1,6 @@
 DGRAM_DELIMITER = "^"
+FIXED_POINT = False
+FP_RADIX = 12
 
 class ServerPacket(object):
     def __init__(self, values = None):
@@ -15,11 +17,17 @@ class ServerPacket(object):
         return int(val)
 
     def add_float(self, floatval):
-        self.values.append(floatval)
+        if FIXED_POINT:
+            self.values.append(self.float_to_fp(floatval))
+        else: 
+            self.values.append(floatval)
 
     def get_float(self):
         val = self.values.pop(0)
-        return float(val)
+        if FIXED_POINT:
+            return self.fp_to_float(val)
+        else: 
+            return float(val)
 
     def add_string(self, stringval):
         self.values.append(stringval)
@@ -39,3 +47,9 @@ class ServerPacket(object):
 
     def get_datagram(self):
         return reduce(lambda x,y: str(x)+DGRAM_DELIMITER+str(y), self.values)
+
+    def fp_to_float(self, val):
+        return float(val) / (1 << FP_RADIX)
+
+    def float_to_fp(self, val):
+        return int(val * (1 << FP_RADIX))

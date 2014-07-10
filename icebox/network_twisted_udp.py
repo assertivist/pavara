@@ -5,7 +5,7 @@ from panda3d.core import *
 from pandac.PandaModules import *
 from icebox.server_packet import ServerPacket
 from icebox.constants import *
-
+import sys
 import signal, random
 
 FPS = 60.0
@@ -63,7 +63,9 @@ class ServerDatagramProtocol(DatagramProtocol):
         update.add_int(len([o for o in self.world.updatables if o.moved]))
         for obj in self.world.updatables:
             obj.add_update(update)
-
+        size = sys.getsizeof(update)
+        if size > 1000:
+            print "sending a big packet with size: ", 
         for addr in self.connections:
             self.transport.write(update.get_datagram(), addr)
         return task.again
@@ -111,6 +113,10 @@ class ClientDatagramProtocol(DatagramProtocol):
 
         for i in range(num_objects):
             name = update.get_string()
+
+            if name in self.world.updatables_to_remove:
+                continue
+
             x = update.get_float()
             y = update.get_float()
             z = update.get_float()
