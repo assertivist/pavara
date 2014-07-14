@@ -246,7 +246,7 @@ class GeomBuilder(object):
 
         return self
 
-    def add_dome(self, color, center, radius, samples, planes, rot=None):
+    def add_dome(self, color, center, radius, samples, planes, rot=None, inverse=False):
         two_pi = pi * 2
         half_pi = pi / 2
         azimuths = [(two_pi * i) / samples for i in range(samples + 1)]
@@ -269,7 +269,10 @@ class GeomBuilder(object):
                 )
                 vertices = [rot.xform(v) + LVector3f(*center) for v in vertices]
 
-                self._commit_polygon(Polygon(vertices), color)
+                if inverse:
+                    self._commit_polygon(Polygon(vertices[::-1]), color)
+                else:
+                    self._commit_polygon(Polygon(vertices), color)
 
         # Generate polygons for the top tier. (Tris)
         for k in range(0, len(azimuths) - 1):
@@ -283,8 +286,10 @@ class GeomBuilder(object):
                 Point3(x3, y3, z3),
             )
             vertices = [rot.xform(v) + LVector3f(*center) for v in vertices]
-
-            self._commit_polygon(Polygon(vertices), color)
+            if inverse:
+                self._commit_polygon(Polygon(vertices[::-1]), color)
+            else:
+                self._commit_polygon(Polygon(vertices), color)
 
         return self
     

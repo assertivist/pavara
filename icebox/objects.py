@@ -1,5 +1,5 @@
 from pavara.utils.geom import GeomBuilder
-from panda3d.core import NodePath, ColorAttrib, Vec3, LRotationf
+from panda3d.core import NodePath, ColorAttrib, Vec3, LRotationf, Point3
 from panda3d.bullet import BulletRigidBodyNode, BulletBoxShape, BulletPlaneShape, BulletGhostNode, BulletSphereShape
 from icebox.constants import *
 
@@ -8,6 +8,7 @@ class WorldObject(object):
     last_unique_id = 0
     attached = False
     moved = False
+    does_rotate = True
 
     def __init__(self, name=None):
         self.name = name
@@ -18,25 +19,30 @@ class WorldObject(object):
     def update(self, dt):
         pass
 
+    def check_attached(self):
+        if not self.attached:
+            print "Couldn't modify", self.name, "because it wasn't attached"
+        return self.attached
+
     def move(self, pos):
-        #assert(self.attached)
-        self.moved = True
-        self.np.set_pos(*pos)
+        if self.check_attached():
+            self.moved = True
+            self.np.set_pos(*pos)
 
     def move_by(self, pos):
-        assert(self.attached)
-        self.moved = True
-        self.np.set_fluid_pos(self.np, pos[0], pos[1], pos[2])
+        if self.check_attached():
+            self.moved = True
+            self.np.set_fluid_pos(self.np, pos[0], pos[1], pos[2])
 
     def rotate(self, hpr):
-        #assert(self.attached)
-        self.moved = True
-        self.np.set_hpr(*hpr)
+        if self.check_attached():
+            self.moved = True
+            self.np.set_hpr(*hpr)
 
     def rotate_by(self, hpr):
-        assert(self.attached)
-        self.moved = True
-        self.np.set_hpr(self.np, hpr[0], hpr[1], hpr[2])
+        if self.check_attached():
+            self.moved = True
+            self.np.set_hpr(self.np, hpr[0], hpr[1], hpr[2])
 
     def add_update(self, datagram):
         pos = self.np.get_pos()
@@ -47,9 +53,10 @@ class WorldObject(object):
         datagram.add_float(pos.x)
         datagram.add_float(pos.y)
         datagram.add_float(pos.z)
-        datagram.add_float(hpr.x)
-        datagram.add_float(hpr.y)
-        datagram.add_float(hpr.z)
+        if self.does_rotate:
+            datagram.add_float(hpr.x)
+            datagram.add_float(hpr.y)
+            datagram.add_float(hpr.z)
         self.moved = False
 
     def __repr__(self):
@@ -99,6 +106,7 @@ class Tank(WorldObject):
 
     def fire_projectile(self):
         pos = self.np.get_pos()
+        pos.y += .6
         rot = self.np.get_h()
 
         speed_pitch = 0
@@ -116,24 +124,47 @@ class Projectile(WorldObject):
     def __init__(self, color, name = None):
         super(Projectile, self).__init__(name)
         self.color = color
+        self.does_rotate = False
         b = GeomBuilder('proj')
-        b.add_dome(self.color, (0, 0, 0), .5, 6, 4)
-        b.add_dome(self.color, (0, 0, 0), .5, 6, 4, rot = LRotationf(0, 180, 0))
+        b.add_dome(self.color, (0, 0, 0), .5, 3, 2)
+        b.add_dome(self.color, (0, 0, 0), .5, 3, 2, rot = LRotationf(0, 180, 0))
         self.geom = b.get_geom_node()
 
         shape = BulletSphereShape(.5)
-        self.node = BulletRigidBodyNode(self.name)
-        self.node.set_mass(.6)
+        self.node = BulletGhostNode(self.name)
+        #self.node.set_mass(.6)
         self.node.addShape(shape)
         self.pos = (0, 0, 0)
         self.timer = 0
+        self.direction = None
 
     def update(self, dt):
         self.timer += dt
+        
         if self.timer > 5:
             self.world.remove(self)
             self.moved = False
         else:
+            if not self.world.is_client:
+                self.move_by([0, 0, PROJECTILE_SPEED * dt])
+                contact_test_result = self.world.bullet_world.contactTest(self.node)
+                for contact in contact_test_result.getContacts():
+                    #print contact.getNode0()
+                    other_node = contact.getNode1()
+                    name = other_node.get_name()
+                    print other_node
+                    if name.startswith('Block'):
+                        mpoint = contact.getManifoldPoint()
+                        v = self.world.render.get_relative_vector(self.np, Vec3(0, 0, 1))
+                        other_np = self.world.objects[name].np
+                        other_pos = other_np.get_pos()
+                        local_point = (other_pos - self.np.get_pos()) * -1
+                        v.normalize()
+                        impulse_v = v * HIT_MAGNITUDE
+                        print impulse_v, local_point
+                        other_node.set_active(True)
+                        other_node.apply_impulse(impulse_v, Point3(local_point))
+                        self.world.remove(self)
             self.moved = True
 
 class Block(WorldObject):
@@ -155,10 +186,11 @@ class Block(WorldObject):
         if not new_pos == self.pos and self.attached:
             self.moved = True
         self.pos = new_pos
-        threshold = 50
+        threshold = ARENA_SIZE/2.0
         if self.world.is_client:
-            threshold -= 1
-        if abs(self.pos.x) > threshold or abs(self.pos.y) > threshold or abs(self.pos.z) > threshold:
+            threshold -= .6
+        dist = (self.pos - Vec3(0,0,0)).length()
+        if dist > threshold:
             self.world.curr_blocks -= 1
             self.world.remove(self)
 
@@ -195,6 +227,11 @@ class Arena(WorldObject):
         bluegoal_overlay_geom = b.get_geom_node()
         floor_np.attach_new_node(bluegoal_geom)
         floor_np.attach_new_node(bluegoal_overlay_geom)
+
+        b = GeomBuilder('enclosingdome')
+        b.add_dome(FLOOR_COLOR, (0, 0, 0), ARENA_SIZE/2.0, 12, 6, inverse = True)
+        ceiling_geom = b.get_geom_node()
+        floor_np.attach_new_node(ceiling_geom)
 
         self.geom = floor_np
 

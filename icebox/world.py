@@ -11,6 +11,7 @@ class World (object):
         self.updatables = set()
         self.render = showbase.render
         self.curr_blocks = 0
+        self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
 
         if is_client:
@@ -29,8 +30,8 @@ class World (object):
         self.objects[obj.name] = obj
         obj.np = self.render.attach_new_node(obj.node)
         if isinstance(obj.node, BulletRigidBodyNode):
-            #if self.is_client:
-                #obj.node.set_mass(0.0)
+            if self.is_client:
+                obj.node.set_mass(0.0)
             self.bullet_world.attach_rigid_body(obj.node)
         if isinstance(obj.node, BulletGhostNode):
             self.bullet_world.attach_ghost(obj.node)
@@ -60,9 +61,9 @@ class World (object):
         self.updatables_to_add[proj.name] = proj
         proj.move(pos)
         proj.rotate([rot, 0, 0])
-        if not self.is_client:
-            v = self.render.get_relative_vector(proj.np, Vec3(0, 0, 1))
-            proj.node.applyCentralImpulse(v*(24 + (12 * speed_pitch)))
+        #if not self.is_client:
+            #v = self.render.get_relative_vector(proj.np, Vec3(0, 0, 1))
+            #proj.node.applyCentralImpulse(v*(24 + (12 * speed_pitch)))
 
     def init_visual(self):
         self.objects_node = NodePath('VisibleObjects')
@@ -122,6 +123,9 @@ class World (object):
             for key, updatable in self.updatables_to_add.items():
                 self.updatables.add(updatable)
             self.updatables_to_add = {}
-
-        if self.curr_blocks < MAX_BLOCKS:
-            self.add_block([0,25,0])
+        if not self.is_client:
+            if self.curr_blocks < MAX_BLOCKS and self.time_since_last_block > 5:
+                self.add_block([0,25,0])
+                self.time_since_last_block = 0
+            else:
+                self.time_since_last_block += dt

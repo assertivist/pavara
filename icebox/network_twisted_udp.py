@@ -101,7 +101,7 @@ class ClientDatagramProtocol(DatagramProtocol):
 
     def datagramReceived(self, data, addr):
         update = ServerPacket(values = data)
-        #print data
+        print data
         txid = update.get_int()
         if txid != self.last_txid+1:
             if self.last_txid == 0:
@@ -114,15 +114,17 @@ class ClientDatagramProtocol(DatagramProtocol):
         for i in range(num_objects):
             name = update.get_string()
 
-            if name in self.world.updatables_to_remove:
-                continue
-
+            does_rotate = not name.startswith('Projectile')
+ 
             x = update.get_float()
             y = update.get_float()
             z = update.get_float()
-            h = update.get_float()
-            p = update.get_float()
-            r = update.get_float()
+            
+            if does_rotate:
+                h = update.get_float()
+                p = update.get_float()
+                r = update.get_float()
+
             if name.startswith('Tank') and name not in self.world.objects:
                 self.world.add_tank([0,0,0], 0, name = name)
             if name.startswith('Block') and name not in self.world.objects:
@@ -132,7 +134,8 @@ class ClientDatagramProtocol(DatagramProtocol):
             obj = self.world.objects.get(name)
             if obj:
                 obj.move((x, y, z))
-                obj.rotate((h, p, r))
+                if does_rotate:
+                    obj.rotate((h, p, r))
 
     def connectionRefused(self):
         print "Connection was refused"
