@@ -9,6 +9,7 @@ class WorldObject(object):
     attached = False
     moved = False
     does_rotate = True
+    is_block = False
 
     def __init__(self, name=None):
         self.name = name
@@ -152,7 +153,7 @@ class Projectile(WorldObject):
                     #print contact.getNode0()
                     other_node = contact.getNode1()
                     name = other_node.get_name()
-                    print other_node
+                    #print other_node
                     if name.startswith('Block'):
                         mpoint = contact.getManifoldPoint()
                         v = self.world.render.get_relative_vector(self.np, Vec3(0, 0, 1))
@@ -161,7 +162,7 @@ class Projectile(WorldObject):
                         local_point = (other_pos - self.np.get_pos()) * -1
                         v.normalize()
                         impulse_v = v * HIT_MAGNITUDE
-                        print impulse_v, local_point
+                        #print impulse_v, local_point
                         other_node.set_active(True)
                         other_node.apply_impulse(impulse_v, Point3(local_point))
                         self.world.remove(self)
@@ -170,7 +171,7 @@ class Projectile(WorldObject):
 class Block(WorldObject):
     def __init__(self, name=None):
         super(Block, self).__init__(name)
-
+        self.is_block = True
         b = GeomBuilder('block')
         b.add_block(BLOCK_COLOR, (0, 0, 0), BLOCK_SIZE)
         self.geom = b.get_geom_node()
@@ -196,6 +197,7 @@ class Block(WorldObject):
 
 
 class Arena(WorldObject):
+    type = 'ground'
     def __init__(self, name=None):
         super(Arena, self).__init__(name)
 
@@ -239,6 +241,12 @@ class Arena(WorldObject):
         self.node = BulletRigidBodyNode('ground')
         self.node.add_shape(ground_shape)
         self.node.set_mass(0)
+
+        goal_shape = BulletBoxShape(Vec3(GOAL_SIZE[0], GOAL_SIZE[2], GOAL_SIZE[1]))
+        self.red_goal = BulletGhostNode('red_goal')
+        self.red_goal.add_shape(goal_shape)
+        self.blue_goal = BulletGhostNode('blue_goal')
+        self.blue_goal.add_shape(goal_shape)
 
 
 

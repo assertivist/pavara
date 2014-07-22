@@ -19,7 +19,7 @@ class Player (object):
         return 'Player %s' % self.pid
 
     def handle_command(self, direction, pressed):
-        print 'PLAYER %s GOT CMD %s %s' % (self.pid, direction, pressed)
+        #print 'PLAYER %s GOT CMD %s %s' % (self.pid, direction, pressed)
         self.tank.handle_command(direction, pressed)
 
 class Server(object):
@@ -39,7 +39,7 @@ class ServerDatagramProtocol(DatagramProtocol):
         taskMgr.doMethodLater(0.03, self.server_task, 'serverManagementTask')
 
     def datagramReceived(self, data, addr):
-        print data, addr
+        #print data, addr
         if addr not in self.connections:
             self.add_player(addr)
         #receive input from client
@@ -54,7 +54,6 @@ class ServerDatagramProtocol(DatagramProtocol):
         self.last_pid += 1
         tank = self.world.add_tank([random.randint(0,50), 1, random.randint(0,50)], random.randint(0, 359))
         self.players[addr] = Player(self.last_pid, tank)
-
 
     def server_task(self, task):
         update = ServerPacket()
@@ -101,7 +100,7 @@ class ClientDatagramProtocol(DatagramProtocol):
 
     def datagramReceived(self, data, addr):
         update = ServerPacket(values = data)
-        print data
+        #print data
         txid = update.get_int()
         if txid != self.last_txid+1:
             if self.last_txid == 0:

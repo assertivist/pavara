@@ -1,8 +1,23 @@
 from icebox.objects import Arena, Block, Tank, Projectile
 from icebox.constants import *
+from icebox.script import Script
 from panda3d.core import VBase4, AmbientLight, NodePath
 from panda3d.core import ColorAttrib, DirectionalLight, Vec4, Vec3
 from panda3d.bullet import BulletWorld, BulletPlaneShape, BulletRigidBodyNode, BulletGhostNode, BulletDebugNode
+
+class Display(object):
+    def __init__(self):
+        self.prev_text = ""
+        self.text = ""
+        self.has_changed = False
+
+    def update(self, dt):
+        if self.prev_text == self.text:
+            self.has_changed = False
+        else:
+            self.has_changed = True
+            print self.text
+            self.prev_text = self.text
 
 class World (object):
     def __init__(self, showbase, is_client):
@@ -13,17 +28,37 @@ class World (object):
         self.curr_blocks = 0
         self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
+        
+        self.display = Display()
 
         if is_client:
             self.init_visual()
-        #else:
+        
         self.bullet_world.setGravity(Vec3(0, -9.81, 0))
 
-        self.arena = Arena('arena')
-        self.attach(self.arena)
-        self.arena.np.set_pos(0,0,0)
         self.updatables_to_add = {}
         self.updatables_to_remove = {}
+
+        self.arena = Arena('ground')
+        self.attach(self.arena)
+        self.arena.np.set_pos(0,0,0)
+
+        if not is_client:
+            self.display = ""
+            self.previous_display = ""
+            self.display_updated = False
+
+            self.red_goal = self.arena.red_goal
+            self.blue_goal = self.arena.blue_goal
+            self.red_goal_np = self.render.attach_new_node(self.red_goal)
+            self.bullet_world.attach_ghost(self.red_goal)
+            self.blue_goal_np = self.render.attach_new_node(self.blue_goal)
+            self.bullet_world.attach_ghost(self.blue_goal)
+            self.red_goal_np.set_pos(0, 0, -ARENA_SIZE/4.0)
+            self.blue_goal_np.set_pos(0, 0, ARENA_SIZE/4.0)
+
+            self.script = Script(self)
+        
 
     def attach(self, obj):
         assert(obj.name not in self.objects)
@@ -44,7 +79,7 @@ class World (object):
         self.curr_blocks += 1
         block = Block(name)
         self.attach(block)
-        self.updatables.add(block)
+        self.updatables.add(block) 
         block.move(pos)
 
     def add_tank(self, pos, rot, name = None):
@@ -61,13 +96,8 @@ class World (object):
         self.updatables_to_add[proj.name] = proj
         proj.move(pos)
         proj.rotate([rot, 0, 0])
-        #if not self.is_client:
-            #v = self.render.get_relative_vector(proj.np, Vec3(0, 0, 1))
-            #proj.node.applyCentralImpulse(v*(24 + (12 * speed_pitch)))
 
     def init_visual(self):
-        self.objects_node = NodePath('VisibleObjects')
-
         alight = AmbientLight('ambient')
         alight.set_color(VBase4(0.6, 0.6, 0.6, 1))
         node = self.render.attach_new_node(alight)
@@ -78,9 +108,6 @@ class World (object):
         directional_light_np = self.render.attach_new_node(directional_light)
         directional_light_np.set_hpr(0, -80, 0)
         self.render.set_light(directional_light_np)
-
-        self.arena = Arena(self.objects_node)
-
         self.render.setColorOff()
         self.render.setShaderAuto()
         self.render.node().setAttrib(ColorAttrib.makeVertex())
@@ -129,3 +156,10 @@ class World (object):
                 self.time_since_last_block = 0
             else:
                 self.time_since_last_block += dt
+
+            self.script.update(dt)
+            if self.display is not self.previous_display:
+                self.display_updated = True
+
+    def get_object(self, name):
+        return self.objects[name]
