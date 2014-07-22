@@ -65,10 +65,18 @@ def assign(tree, env, val):
 
 def aug_assign(tree, env, op, val):
     if isinstance(tree, ast.Name):
+        old = env.lookup(tree.id)
         if isinstance(op, ast.Add):
-            old = env.lookup(tree.id)
             old += val
-            env.assign(tree.id, old)
+        elif isinstance(op, ast.Sub):
+            old -= val
+        elif isinstance(op, ast.Div):
+            old /= val
+        elif isinstance(op, ast.Mult):
+            old *= val
+        elif isinstance(op, ast.Pow):
+            old **= val
+        env.assign(tree.id, old)
     else:
         print 'unsupported augmentation', tree
 
@@ -115,6 +123,12 @@ def evaluate(tree, env):
             return left + right
         elif isinstance(tree.op, ast.Sub):
             return left - right
+        elif isinstance(tree.op, ast.Div):
+            return left / right
+        elif isinstance(tree.op, ast.Pow):
+            return left ** right
+        elif isinstance(tree.op, ast.Mult):
+            return left * right
         else:
             print "unknown operator", tree.op
     elif isinstance(tree, ast.Num):
