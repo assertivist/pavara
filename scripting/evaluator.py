@@ -63,6 +63,16 @@ def assign(tree, env, val):
     else:
         print 'unsupported assignment', tree
 
+def aug_assign(tree, env, op, val):
+    if isinstance(tree, ast.Name):
+        if isinstance(op, ast.Add):
+            old = env.lookup(tree.id)
+            old += val
+            env.assign(tree.id, old)
+    else:
+        print 'unsupported augmentation', tree
+
+
 def evaluate(tree, env):
     if isinstance(tree, ast.Module):
         return evaluate(tree.body, env)
@@ -90,8 +100,11 @@ def evaluate(tree, env):
             elif isinstance(statement, ast.Return):
                 env.returnval = evaluate(statement.value, env)
                 return results
+            elif isinstance(statement, ast.AugAssign):
+                v = evaluate(statement.value, env)
+                aug_assign(statement.target, env, statement.op, v)
             else:
-                print statement
+                print 'unknown statement', statement
         return results
     elif isinstance(tree, ast.Name):
         return env.lookup(tree.id)
@@ -118,6 +131,14 @@ def evaluate(tree, env):
             return left == right
         elif isinstance(tree.ops[0], ast.LtE):
             return left <= right
+        elif isinstance(tree.ops[0], ast.Lt):
+            return left < right
+        elif isinstance(tree.ops[0], ast.NotEq):
+            return left != right
+        elif isinstance(tree.ops[0], ast.Gt):
+            return left > right
+        elif isinstance(tree.ops[0], ast.GtE):
+            return left >= right
         else:
             print 'unsupported compare', tree.ops[0]
     elif isinstance(tree, ast.Call):
