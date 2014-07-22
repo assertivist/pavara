@@ -50,10 +50,12 @@ def add1(x):
         _, env = safe_eval("""
 def modify(obj):
     obj.open = obj.v
+    obj.v = 'test str'
 """)
         c = C()
         env.lookup('modify').call(c)
         self.assertEqual(c.open, 20)
+        self.assertEqual(c.v, 'test str')
 
     def test_not_write_python_functions(self):
         _, env = safe_eval("""

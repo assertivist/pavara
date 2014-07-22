@@ -85,7 +85,7 @@ def evaluate(tree, env):
                 env.assign(statement.name, SafePyFunction(statement.args, statement.body, env))
             elif isinstance(statement, ast.Assign):
                 v = evaluate(statement.value, env)
-                if isinstance(v, int) or isinstance(v, float) or isinstance(v, SafePyFunction):
+                if isinstance(v, int) or isinstance(v, float) or isinstance(v, SafePyFunction) or isinstance(v, str):
                     assign(statement.targets[0], env, v)
                 else:
                     print "unsafe assignment rejected", v
