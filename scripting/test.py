@@ -159,6 +159,21 @@ def naughty(c):
         c = C()
         result = env.lookup('naughty').call(c)
         self.assertNotEqual(result, open)
+    def test_support_strings(self):
+        _, env = safe_eval("""
+def testfun(c):
+    return 'test string'
+""")
+        result = env.lookup('testfun').call()
+        self.assertEqual(result, 'test string')
+    def test_support_bools(self):
+        _, env = safe_eval("""
+def testfun(c):
+    return True == False
+""")
+        result = env.lookup('testfun').call()
+        self.assertEqual(result, False)
+
 
 if __name__ == '__main__':
     unittest.main()
