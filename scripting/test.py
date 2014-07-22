@@ -193,6 +193,29 @@ def testfun(c):
 """)
         result = env.lookup('testfun').call()
         self.assertEqual(result, 5)
+    def test_support_math(self):
+        _, env = safe_eval("""
+def testfun(c):
+    return 4**3/2+5*6/3
+""")
+        result = env.lookup('testfun').call()
+        self.assertEqual(result, 42)
+    def test_support_augmath(self):
+        _, env = safe_eval("""
+def testfun(c):
+    v = 4
+    v **= 3
+    v /= 2
+    v2 = 5
+    v2 *= 6
+    v2 /= 3
+
+    v += v2
+    return v
+""")
+        result = env.lookup('testfun').call()
+        self.assertEqual(result, 42)
+
 
 
 if __name__ == '__main__':
