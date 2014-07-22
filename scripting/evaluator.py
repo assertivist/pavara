@@ -106,6 +106,8 @@ def evaluate(tree, env):
             print "unknown operator", tree.op
     elif isinstance(tree, ast.Num):
         return tree.n
+    elif isinstance(tree, ast.Str):
+        return tree.s
     elif isinstance(tree, ast.Attribute):
         obj = evaluate(tree.value, env)
         return getattr(obj, tree.attr)
@@ -135,5 +137,6 @@ def safe_eval(script, env=None, whitelist=None):
     if whitelist is not None:
         for name, f in whitelist.items():
             env.assign(name, WrappedFunction(f))
+    env.assign('True', True)
+    env.assign('False', False)
     return evaluate(ast.parse(script), env), env
-
