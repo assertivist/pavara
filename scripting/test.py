@@ -173,6 +173,24 @@ def testfun(c):
 """)
         result = env.lookup('testfun').call()
         self.assertEqual(result, False)
+    def test_support_various_types_of_comparison_in_fact_all_would_be_good(self):
+        _, env = safe_eval("""
+def testfun(c):
+    entered = 0
+    if 1 < 2:
+        entered += 1
+    if 0 <= 0:
+        entered += 1
+    if 0 != 1:
+        entered += 1
+    if 1 > 0:
+        entered += 1
+    if 1 >= 1:
+        entered += 1
+    return entered
+""")
+        result = env.lookup('testfun').call()
+        self.assertEqual(result, 5)
 
 
 if __name__ == '__main__':
