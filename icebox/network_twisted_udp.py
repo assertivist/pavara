@@ -85,7 +85,6 @@ class ClientDatagramProtocol(DatagramProtocol):
         self.host = host
         self.port = port
         self.last_txid = 0
-        #taskMgr.doMethodLater(0.001, self.client_task, 'clientUpdateTask')
 
     def startProtocol(self):
         self.transport.connect(self.host, self.port)

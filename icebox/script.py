@@ -34,16 +34,14 @@ class Goal(object):
 class Timer(object):
 	def __init__(self, interval, f):
 		self.t = 0
-		self.interval = interval * 10
+		self.interval = interval
 		self.f = f
 
 	def update(self, dt):
-		self.t += dt
-		if self.t < self.interval:
+		self.t += dt * 60
+		if self.t > self.interval:
 			self.f.call()
 			self.t = 0
-
-
 
 class Script(object):
 	def __init__(self, world):
@@ -55,7 +53,7 @@ class Script(object):
 
 		self.env.assign('goal_red', self.red_goal)
 		self.env.assign('goal_blue', self.blue_goal)
-		self.env.assign('display', self.world.display)
+		self.env.assign('display', self.world.message_display)
 		self.whitelist = {
 			'add_timer': self.add_timer,
 			'stop_timer': self.stop_timer,

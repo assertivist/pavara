@@ -5,19 +5,19 @@ from panda3d.core import VBase4, AmbientLight, NodePath
 from panda3d.core import ColorAttrib, DirectionalLight, Vec4, Vec3
 from panda3d.bullet import BulletWorld, BulletPlaneShape, BulletRigidBodyNode, BulletGhostNode, BulletDebugNode
 
-class Display(object):
+class Message_Display(object):
     def __init__(self):
-        self.prev_text = ""
-        self.text = ""
+        self.prev_message = ""
+        self.message = ""
         self.has_changed = False
 
     def update(self, dt):
-        if self.prev_text == self.text:
+        if self.prev_message == self.message:
             self.has_changed = False
         else:
             self.has_changed = True
-            print self.text
-            self.prev_text = self.text
+            print self.message
+            self.prev_message = self.message
 
 class World (object):
     def __init__(self, showbase, is_client):
@@ -28,8 +28,8 @@ class World (object):
         self.curr_blocks = 0
         self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
-        
-        self.display = Display()
+
+        self.message_display = Message_Display()
 
         if is_client:
             self.init_visual()
@@ -136,7 +136,7 @@ class World (object):
         
 
     def update(self, dt):
-
+        self.message_display.update(dt)
         self.bullet_world.doPhysics(dt)
         for obj in self.updatables:
             obj.update(dt)

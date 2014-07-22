@@ -1,27 +1,28 @@
 score_red = 0
 score_blue = 0
-
-#timers = {}
+interval = 10
 
 def incr_red():
     score_red = score_red + 1
+    display.message = score_red
     if score_red > 100:
         display.message = '!!RED WINS!!'
-    game.winner = 'red'
+    #game.winner = red
 
 def incr_blue():
     score_blue = score_blue + 1
+    display.message = score_blue
     if score_blue > 100:
         display.message = '!!BLUE WINS!!'
-    game.winner = 'blue'
+    #game.winner = blue
 
 def enter_red(obj):
     if obj.is_block:
-        add_timer(1000, obj.name, incr_red)
+        add_timer(interval, obj.name, incr_red)
 
 def enter_blue(obj):
     if obj.is_block:
-        add_timer(1000, obj.name, incr_blue)
+        add_timer(interval, obj.name, incr_blue)
 
 def exit_goal(obj):
     if is_timer(obj.name):
