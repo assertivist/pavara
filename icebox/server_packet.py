@@ -3,6 +3,9 @@ FIXED_POINT = False
 FP_RADIX = 12
 
 class ServerPacket(object):
+    NEW_PLAYER = 0
+    OBJ_UPDATE = 1
+    DISPLAY_TEXT = 2
     def __init__(self, values = None):
         if values:
             self.values = self.read_values(values)

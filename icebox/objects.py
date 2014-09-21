@@ -64,15 +64,17 @@ class WorldObject(object):
         return self.name
 
 class Tank(WorldObject):
-    def __init__(self, color, name = None):
+    def __init__(self, color, name = None, nick = None):
         super(Tank, self).__init__(name)
         self.color = color
         b = GeomBuilder('tank')
         b.add_dome(self.color, (0, 0, 0), 2, 6, 4)
         b.add_block([.3, .3, .3, 1], (0, 0.6, 2.2), (.7, .7, 2))
+        if nick:
+            self.text = nick
         self.geom = b.get_geom_node()
         self.node = BulletGhostNode(self.name)
-
+        self.text_node_path = None
         self.hello = False
         self.left = False
         self.right = False
@@ -104,6 +106,9 @@ class Tank(WorldObject):
                 self.fire_projectile()
             if not self.fire:
                 self.fired = False
+            if self.text_node_path:
+                self.text_node_path.look_at(self.world.cam)
+                self.text_node_path.set_hpr(self.text_node_path, 180, 0, 0)
 
     def fire_projectile(self):
         pos = self.np.get_pos()
