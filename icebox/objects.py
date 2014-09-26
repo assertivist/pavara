@@ -155,12 +155,12 @@ class Projectile(WorldObject):
                 self.move_by([0, 0, PROJECTILE_SPEED * dt])
                 contact_test_result = self.world.bullet_world.contactTest(self.node)
                 for contact in contact_test_result.getContacts():
-                    #print contact.getNode0()
                     other_node = contact.getNode1()
                     name = other_node.get_name()
                     #print other_node
                     if name.startswith('Block'):
-                        mpoint = contact.getManifoldPoint()
+                        if not self.world:
+                            return
                         v = self.world.render.get_relative_vector(self.np, Vec3(0, 0, 1))
                         other_np = self.world.objects[name].np
                         other_pos = other_np.get_pos()
@@ -188,6 +188,8 @@ class Block(WorldObject):
         self.pos = (0, 0, 0)
 
     def update(self, dt):
+        if not self.attached:
+            return
         new_pos = self.np.get_pos()
         if not new_pos == self.pos and self.attached:
             self.moved = True

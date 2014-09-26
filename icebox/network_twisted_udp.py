@@ -214,7 +214,10 @@ class ClientDatagramProtocol(DatagramProtocol):
         nick = update.get_string()
         obj_name = update.get_string()
         team = update.get_string()
-        self.world.add_tank([0,0,0], 0, name = obj_name, nick = nick, team = team)
+        t = self.world.add_tank([0,0,0], 0, name = obj_name, nick = nick, team = team)
+        my_nick = ConfigVariableString('nick', 'SomeJerk').getValue()
+        if nick == my_nick:
+            self.world.attach_cam(t)
 
     def whois(self, name):
         whois_dgram = ServerPacket()

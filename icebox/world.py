@@ -34,7 +34,7 @@ class World (object):
         self.objects = {}
         self.updatables = set()
         self.render = showbase.render
-        self.cam = showbase.cam
+        self.cam = showbase.camera
         self.curr_blocks = 0
         self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
@@ -42,6 +42,8 @@ class World (object):
         self.message_display = Message_Display()
 
         if is_client:
+            self.cam_attached = False
+            self.cam_look_at_node = None
             self.init_visual()
         
         self.bullet_world.setGravity(Vec3(0, -9.81, 0))
@@ -149,6 +151,15 @@ class World (object):
             debug_np.show()
             self.bullet_world.setDebugNode(debug_np.node())
 
+    def attach_cam(self, tank):
+        #self.cam.set_pos(tank.np, 0, 0, 0)
+        self.cam.reparent_to(tank.np)
+        #self.cam.set_pos(tank.np, 0, 0, 0)
+        self.cam_look_at_node = tank.np
+        
+        self.cam_attached = True
+
+
     def remove(self, obj):
         self.updatables_to_remove[obj.name] = obj
 
@@ -193,6 +204,8 @@ class World (object):
                 #print "New display text: ", self.display
         else:
             self.message_display.update(dt)
+            if self.cam_attached:
+                self.cam.look_at(self.cam_look_at_node)
 
     def get_object(self, name):
         return self.objects[name]
