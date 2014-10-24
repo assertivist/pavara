@@ -34,11 +34,7 @@ class World (object):
         self.objects = {}
         self.updatables = set()
         self.render = showbase.render
-<<<<<<< HEAD
         self.cam = showbase.camera
-=======
-        self.cam = showbase.cam
->>>>>>> 616726792cf5deb27df8618ca3942fe6870a737a
         self.curr_blocks = 0
         self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
