@@ -1,23 +1,32 @@
 from icebox.objects import Arena, Block, Tank, Projectile
 from icebox.constants import *
 from icebox.script import Script
-from panda3d.core import VBase4, AmbientLight, NodePath
+from panda3d.core import VBase4, AmbientLight, NodePath, TextNode
 from panda3d.core import ColorAttrib, DirectionalLight, Vec4, Vec3
 from panda3d.bullet import BulletWorld, BulletPlaneShape, BulletRigidBodyNode, BulletGhostNode, BulletDebugNode
+from direct.gui.OnscreenText import OnscreenText
 
 class Message_Display(object):
     def __init__(self):
-        self.prev_message = ""
-        self.message = ""
+        self.prev_text_to_display = ""
+        self.text_to_display = ""
         self.has_changed = False
+        self.text_options = dict(text = 'hello', pos = (-.9, .9), scale = 0.07, mayChange = True, fg=(1,1,1,1), bg=(0,0,0,1))
+        self.text_object = OnscreenText(**self.text_options)
 
     def update(self, dt):
-        if self.prev_message == self.message:
+        if self.prev_text_to_display == self.text_to_display:
             self.has_changed = False
         else:
             self.has_changed = True
-            print self.message
-            self.prev_message = self.message
+            print self.text_to_display
+            self.text_object.destroy()
+            self.text_object = OnscreenText(**self.text_options)
+            self.text_object.setText(self.text_to_display)
+            self.prev_text_to_display = self.text_to_display
+
+    def set_text(self, text):
+        self.text_to_display = text
 
 class World (object):
     def __init__(self, showbase, is_client):
@@ -25,6 +34,11 @@ class World (object):
         self.objects = {}
         self.updatables = set()
         self.render = showbase.render
+<<<<<<< HEAD
+        self.cam = showbase.camera
+=======
+        self.cam = showbase.cam
+>>>>>>> 616726792cf5deb27df8618ca3942fe6870a737a
         self.curr_blocks = 0
         self.time_since_last_block = 0
         self.bullet_world = BulletWorld()
@@ -32,6 +46,8 @@ class World (object):
         self.message_display = Message_Display()
 
         if is_client:
+            self.cam_attached = False
+            self.cam_look_at_node = None
             self.init_visual()
         
         self.bullet_world.setGravity(Vec3(0, -9.81, 0))
@@ -71,6 +87,17 @@ class World (object):
         if isinstance(obj.node, BulletGhostNode):
             self.bullet_world.attach_ghost(obj.node)
         if self.is_client:
+            if hasattr(obj, 'text'):
+                text = TextNode(obj.name+'text')
+                text.set_text(obj.text)
+                text.setTextColor(1, .3, .3, 1)
+                text.setShadow(0.05, 0.05)
+                text.setShadowColor(0, 0, 0, 1)
+                textNodePath = obj.np.attach_new_node(text)
+                textNodePath.setScale(1.6)
+                textNodePath.set_pos(0, 2.3, 0)
+                obj.text_node_path = textNodePath
+                print obj.text
             NodePath(obj.geom).reparent_to(obj.np)
         obj.world = self
         obj.attached = True
@@ -82,8 +109,12 @@ class World (object):
         self.updatables.add(block) 
         block.move(pos)
 
-    def add_tank(self, pos, rot, name = None):
-        tank = Tank(RED_COLOR, name)
+    def add_tank(self, pos, rot, name = None, nick = None, team = None):
+        tank = None
+        if team == 'blue':
+            tank = Tank(BLUE_COLOR, name, nick)
+        else:
+            tank = Tank(RED_COLOR, name, nick)
         self.attach(tank)
         self.updatables.add(tank)
         tank.move(pos)
@@ -112,6 +143,8 @@ class World (object):
         self.render.setShaderAuto()
         self.render.node().setAttrib(ColorAttrib.makeVertex())
 
+        self.message = Message_Display()
+
         if DEBUG:
             debug_node = BulletDebugNode('Debug')
             debug_node.showWireframe(True)
@@ -121,6 +154,15 @@ class World (object):
             debug_np = self.render.attach_new_node(debug_node)
             debug_np.show()
             self.bullet_world.setDebugNode(debug_np.node())
+
+    def attach_cam(self, tank):
+        #self.cam.set_pos(tank.np, 0, 0, 0)
+        self.cam.reparent_to(tank.np)
+        #self.cam.set_pos(tank.np, 0, 0, 0)
+        self.cam_look_at_node = tank.np
+        
+        self.cam_attached = True
+
 
     def remove(self, obj):
         self.updatables_to_remove[obj.name] = obj
@@ -136,7 +178,7 @@ class World (object):
         
 
     def update(self, dt):
-        self.message_display.update(dt)
+        
         self.bullet_world.doPhysics(dt)
         for obj in self.updatables:
             obj.update(dt)
@@ -150,6 +192,7 @@ class World (object):
             for key, updatable in self.updatables_to_add.items():
                 self.updatables.add(updatable)
             self.updatables_to_add = {}
+
         if not self.is_client:
             if self.curr_blocks < MAX_BLOCKS and self.time_since_last_block > 5:
                 self.add_block([0,25,0])
@@ -158,8 +201,15 @@ class World (object):
                 self.time_since_last_block += dt
 
             self.script.update(dt)
-            if self.display is not self.previous_display:
+            if self.display == self.previous_display:
+                pass
+            else:
                 self.display_updated = True
+                #print "New display text: ", self.display
+        else:
+            self.message_display.update(dt)
+            if self.cam_attached:
+                self.cam.look_at(self.cam_look_at_node)
 
     def get_object(self, name):
         return self.objects[name]

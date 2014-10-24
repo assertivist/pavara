@@ -17,14 +17,14 @@ class Goal(object):
 			exited = self.inside.difference(nodes)
 			if len(entered) > 0:
 				for n in entered:
-					print "Entered: ", n
+					#print "Entered: ", n
 					if self.on_enter is not None:
 						key = n.get_name()
 						wobject = self.world.get_object(key)
 						self.on_enter.call(wobject)
 			if len(exited) > 0:
 				for n in exited:
-					print "Exited: ", n
+					#print "Exited: ", n, self.on_exit
 					if self.on_exit is not None:
 						key = n.get_name()
 						wobject = self.world.get_object(key)
@@ -53,11 +53,12 @@ class Script(object):
 
 		self.env.assign('goal_red', self.red_goal)
 		self.env.assign('goal_blue', self.blue_goal)
-		self.env.assign('display', self.world.message_display)
+		#self.env.assign('display', self.world.display)
 		self.whitelist = {
 			'add_timer': self.add_timer,
 			'stop_timer': self.stop_timer,
-			'is_timer': self.is_timer
+			'is_timer': self.is_timer,
+			'set_display': self.set_display
 		}
 		
 		self.timers = {}
@@ -79,3 +80,6 @@ class Script(object):
 
 	def is_timer(self, key):
 		return key in self.timers
+
+	def set_display(self, text):
+		self.world.display = str(text)

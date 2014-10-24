@@ -4,16 +4,16 @@ interval = 10
 
 def incr_red():
     score_red = score_red + 1
-    display.message = score_red
+    set_display(score_red)
     if score_red > 100:
-        display.message = '!!RED WINS!!'
+        set_display('!!RED WINS!!')
     #game.winner = red
 
 def incr_blue():
     score_blue = score_blue + 1
-    display.message = score_blue
+    set_display(score_blue)
     if score_blue > 100:
-        display.message = '!!BLUE WINS!!'
+        set_display('!!BLUE WINS!!')
     #game.winner = blue
 
 def enter_red(obj):
