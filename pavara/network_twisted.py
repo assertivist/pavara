@@ -12,12 +12,19 @@ import signal, random
 FPS = 60.0
 
 class Player (object):
-	def __init__(self):
+	def __init__(self, server, address, pid, name):
+		self.server = server
+		self.address = address
 		self.pid = pid
-		pass
+		self.name = name
+		self.last_seq = 0
+		self.pending = {}
+		self.received = []
+
+
 
 	def __repr__(self):
-		return 'Player %s' % self.pid
+		return 'Player<%s:%s>' % (self.name, self.pid)
 
 
 class Server(object):
@@ -40,8 +47,24 @@ class ServerDatagramProtocol(DatagramProtocol):
 
 		taskMgr.doMethodLater(.03, self.server_task, 'server_task')
 
+	@property
+	def nextpid(self):
+		self.last_pid += 1
+		return self.last_pid
+
 	def datagramReceived(self, data, addr):
-		pass
+		if addr not in self.connections:
+			name = get_join_packet(data)
+			if name:
+				self.add_player(addr, name)
+			return
+		else:
+			pass
+
+	def add_player(self, addr, name):
+		print "Player '%s' joined from" % name, addr
+		p = Player(self, addr, self.nextpid, name)
+		self.players[addr] = p
 
 	def server_task(self, task):
 
@@ -87,7 +110,7 @@ class ClientDatagramProtocol(DatagramProtocol):
 		self.join_server(nick)
 
 	def join_server(self, nick):
-		pass
+		self.transport.write(join_packet(nick))
 
 	def send_input(self):
 		pass
