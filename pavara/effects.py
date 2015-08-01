@@ -99,7 +99,7 @@ class Mortal (Effect):
 
     def dead(self):
         c = getattr(self, 'color', [1,1,1,1])
-        expl_pos = self.node.get_pos(self.world.render)
+        expl_pos = self.node.get_pos(self.world.scene)
         size = getattr(self, 'size', None)
         width = getattr(self, 'width', None)
         radius = getattr(self, 'radius', None)
@@ -132,7 +132,7 @@ class TriangleExplosion (WorldObject):
 
 
     def create_node(self):
-        self.pos_node = self.world.render.attachNewNode(self.name+"_node")
+        self.pos_node = self.world.scene.attachNewNode(self.name+"_node")
         return self.pos_node
 
     def attached(self):
@@ -166,7 +166,7 @@ class Shrapnel (PhysicalObject):
         extent = self.size/2.0
         geom_points = [Point3(0,-extent,-extent), Point3(0,extent,extent), Point3(0,-extent,extent)]
         self.geom = GeomBuilder('tri').add_tri(self.color, geom_points).get_geom_node()
-        self.node = self.world.render.attach_new_node(self.geom)
+        self.node = self.world.scene.attach_new_node(self.geom)
         self.colorhandle = self.node.find('**/*')
         return self.node
 

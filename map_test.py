@@ -1,6 +1,5 @@
 import sys, os, random
 from panda3d.core import *
-from panda3d.rocket import *
 from pandac.PandaModules import WindowProperties
 from direct.gui.DirectGui import *
 from direct.showbase.ShowBase import ShowBase
