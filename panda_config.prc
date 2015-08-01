@@ -4,7 +4,7 @@ multisamples 8
 win-size 1280 720
 window-title Pavara
 show-frame-rate-meter #t
-sync-video 1
+sync-video 0
 #want-pstats 1
 basic-shaders-only 1
 egg-emulate-bface 0

@@ -1,6 +1,5 @@
 import os
 from panda3d.core import *
-from panda3d.rocket import *
 from pandac.PandaModules import WindowProperties
 from direct.showbase import Audio3DManager
 from direct.filter.CommonFilters import CommonFilters
@@ -34,7 +33,6 @@ class Splash (object):
         self.map = False
         self.audio3d = showbase.audio3d
         self.mouseWatcherNode = showbase.mouseWatcherNode
-        self.r_region = RocketRegion.make('pandaRocket', self.base.win)
 
         if in_map:
             self.switch_map(in_map)
@@ -44,7 +42,6 @@ class Splash (object):
             self.fade_in()
             incarn = self.map.world.get_incarn()
             self.map.world.attach(Walker(incarn))
-            self.show_selection_screen()
 
     def fade_in(self):
         # blackout card
@@ -59,41 +56,10 @@ class Splash (object):
         # fade from full opacity to no opacity
         cintv = LerpColorScaleInterval(b, 1.5, (1,1,1,0), (1,1,1,1))
         def _unhide_ui():
-            self.doc.GetElementById('content').style.display = 'block'
             b.detach_node()
         # show ui after lerp is finished
         showui = Func(_unhide_ui)
         Sequence(cintv,showui).start()
-
-    def show_selection_screen(self):
-        LoadFontFace("Ui/assets/MunroSmall.otf")
-        LoadFontFace("Ui/assets/Munro.otf")
-        self.r_region.setActive(1)
-        context = self.r_region.getContext()
-        self.doc = context.LoadDocument('Ui/rml/map_test.rml')
-
-        mlist = self.doc.GetElementById('map_select')
-        for idx,item in enumerate(os.listdir('Maps')):
-            fn_split = item.split('.')
-            if len(fn_split) < 2 or fn_split[0] == "" or fn_split[1] != "xml":
-                continue
-            item_div = self.doc.CreateElement("div")
-            item_div.SetAttribute("map", item)
-            item_div.AddEventListener('click', self.map_selected, True)
-            item_div.AppendChild(self.doc.CreateTextNode(item))
-            mlist.AppendChild(item_div)
-
-        self.doc.GetElementById('go').AddEventListener('click', self.start_map, True)
-        self.doc.GetElementById('quit').AddEventListener('click', self.quit_clicked, True)
-        self.doc.GetElementById('info_box').style.display = 'none'
-        self.doc.GetElementById('content').style.display = 'none'
-        self.doc.GetElementById('go').style.display = 'none'
-        self.doc.Show()
-
-
-        self.ih = RocketInputHandler()
-        self.ih_node = base.mouseWatcher.attachNewNode(self.ih)
-        self.r_region.setInputHandler(self.ih)
 
     def map_selected(self):
         in_map = event.current_element.GetAttribute("map")
@@ -132,7 +98,7 @@ class Splash (object):
 
     def start_map(self):
         try:
-            self.r_region.setActive(0)
+            #self.r_region.setActive(0)
             self.ih_node.detach_node()
         except:
             # probably self.r_region isn't set because

@@ -21,7 +21,8 @@ class Player (object):
 		self.pending = {}
 		self.received = []
 
-
+	def send(self, packet, transport):
+		transport.send(packet.flatten())
 
 	def __repr__(self):
 		return 'Player<%s:%s>' % (self.name, self.pid)
@@ -48,9 +49,14 @@ class ServerDatagramProtocol(DatagramProtocol):
 		taskMgr.doMethodLater(.03, self.server_task, 'server_task')
 
 	@property
-	def nextpid(self):
+	def next_pid(self):
 		self.last_pid += 1
 		return self.last_pid
+
+	@property
+	def next_txid(self):
+		self.last_txid += 1
+		return self.last_txid
 
 	def datagramReceived(self, data, addr):
 		if addr not in self.connections:
@@ -63,7 +69,7 @@ class ServerDatagramProtocol(DatagramProtocol):
 
 	def add_player(self, addr, name):
 		print "Player '%s' joined from" % name, addr
-		p = Player(self, addr, self.nextpid, name)
+		p = Player(self, addr, self.next_pid, name)
 		self.players[addr] = p
 
 	def server_task(self, task):
@@ -77,8 +83,8 @@ class ServerDatagramProtocol(DatagramProtocol):
 		self.send_to_all(packet)
 
 	def send_to_all(self, packet):
-		for addr in self.connections:
-			self.transport.write(packet.flatten(), addr)
+		for player in self.players:
+			player.send(packet, self.transport)
 
 class Client(object):
 	def __init__(self, host, port):
@@ -103,17 +109,35 @@ class ClientDatagramProtocol(DatagramProtocol):
 		self.last_txid += 1
 	    return self.last_txid
 
-
 	def startProtocol(self):
 		self.transport.connect(self.host, self.port)
 		nick = ConfigVariableString('nick', 'Some Jerk').getValue()
 		self.join_server(nick)
+
+	def datagram_received(self, data, addr):
+		p = parse_packet(data)
+
+		if p.kind == KIND_PLAYER_JOINED:
+			pass
+		if p.kind == KIND_GAME_STARTED:
+			pass
+		if p.kind == KIND_PLAYER_UPDATE:
+			pass
+		if p.kind == KIND_WORLD_UPDATE:
+			pass
+		if p.kind == KIND_PROJECTILE_SPAWN:
+			pass
+		if p.kind == KIND_PROJECTILE_HIT:
+			pass
 
 	def join_server(self, nick):
 		self.transport.write(join_packet(nick))
 
 	def send_input(self):
 		pass
+
+	def send_chat_chars(self, chars):
+		self.transport.write(chat_packet(chars))
 
 	def client_task(self, task):
 

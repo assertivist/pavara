@@ -354,7 +354,7 @@ class Skeleton (object):
             self.left_leg.up_step = not self.right_leg.up_step
             for leg in [self.left_leg, self.right_leg]:
                 leg.walkfunc_sizeparam = MAX_WALKFUNC_SIZE_FACTOR
-                leg._increment_walk_seq_step(walk)
+                leg._increment_walk_seq_step(walk * dt)
                 leg._recompute_walkfunc_x()
                 leg.ik_leg()
             if self.left_leg.is_on_ground and not self.lf_sound_played:
