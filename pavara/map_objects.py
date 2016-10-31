@@ -368,13 +368,13 @@ class Sky (WorldObject):
 
         geom.add_geom(GeomBuilder('sky').add_rect((1, 1, 1, 1), dl.getX(), dl.getY(), 0, ur.getX(), ur.getY(), 0).get_geom())
         self.node = self.world.scene.attach_new_node(geom)
-        self.node.set_shader(Shader.load('Shaders/Sky.sha'))
-        self.node.set_shader_input('camera', self.world.camera)
+        self.node.set_shader(Shader.load(Shader.SL_GLSL, vertex='Shaders/Sky.vert', fragment='Shaders/Sky.frag'))
+        #self.node.set_shader_input('camera', self.world.camera)
         self.node.set_shader_input('sky', self.node)
         self.node.set_shader_input('groundColor', *self.ground)
         self.node.set_shader_input('skyColor', *self.color)
         self.node.set_shader_input('horizonColor', *self.horizon)
-        self.node.set_shader_input('gradientHeight', self.scale, 0, 0, 0)
+        self.node.set_shader_input('gradientHeight', self.scale)
         self.node.reparent_to(self.world.camera)
         self.node.set_pos(self.world.camera, 0, 0, z)
 
