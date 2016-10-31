@@ -261,6 +261,12 @@ class ClientWorld(World):
     def register_collider(self, obj):
         pass
 
+    def do_plasma_push(self, plasma, node, energy):
+        pass
+
+    def do_explosion(self, node, radius, force):
+        pass
+
     def add_celestial(self, azimuth, elevation, color, intensity, radius, visible):
         """
         Adds a celestial light source to the scene. If it is a visible celestial, also add a sphere model.
