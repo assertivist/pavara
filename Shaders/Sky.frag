@@ -1,11 +1,11 @@
-#version 130
+#version 120
 
 uniform vec4 skyColor;
 uniform vec4 horizonColor;
 uniform vec4 groundColor;
 uniform float gradientHeight;
 in vec3 tex_vector;
-out vec4 frag_color;
+varying out vec4 frag_color;
 
 void main() {
     float phi = normalize(tex_vector).y;
