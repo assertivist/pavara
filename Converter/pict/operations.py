@@ -46,6 +46,14 @@ class ClipRegion (VariableLengthOperation):
     def parse_variable(self, bytes):
         self.region = datatypes.Rect(bytes)
 
+class FillRegion (VariableLengthOperation):
+	length = 2
+	
+	def parse(self, bytes):
+		self.vari_length = bytes_to_short(bytes) - 2
+		
+	def parse_variable(self, bytes):
+		self.region = datatypes.Rect(bytes)
 
 class TextFont (Operation):
     length = 2
@@ -376,8 +384,10 @@ class Factory (object):
         0x61: PaintArc,
         0x68: FrameSameArc,
         0x69: PaintSameArc,
+        # 0x71: PaintPoly,
         0xa0: ShortComment,
         0xa1: LongComment,
+        0x84: FillRegion,
         0xff: EndPict
     }
 
