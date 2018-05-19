@@ -286,7 +286,8 @@ class Converter:
         if self.description:
             mapEl.set('description', self.description)
 
-        ET.dump(mapEl)
+        # ET.dump(mapEl)
+        return ET.tostring(mapEl)
 
     def create_block(self, rect, corner_radius=0):
         self.last_rect = rect
