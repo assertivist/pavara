@@ -1,4 +1,4 @@
-import datatypes
+from .datatypes import *
 from Converter.helpers import *
 
 
@@ -44,16 +44,18 @@ class ClipRegion (VariableLengthOperation):
         self.vari_length = bytes_to_short(bytes) - 2
 
     def parse_variable(self, bytes):
-        self.region = datatypes.Rect(bytes)
+        self.region = Rect(bytes)
+
 
 class FillRegion (VariableLengthOperation):
-	length = 2
-	
-	def parse(self, bytes):
-		self.vari_length = bytes_to_short(bytes) - 2
-		
-	def parse_variable(self, bytes):
-		self.region = datatypes.Rect(bytes)
+    length = 2
+
+    def parse(self, bytes):
+        self.vari_length = bytes_to_short(bytes) - 2
+
+    def parse_variable(self, bytes):
+        self.region = Rect(bytes)
+
 
 class TextFont (Operation):
     length = 2
@@ -73,7 +75,7 @@ class PenSize (Operation):
     length = 4
 
     def parse(self, bytes):
-        self.size = datatypes.Point(bytes)
+        self.size = Point(bytes)
 
 
 class PenMode (Operation):
@@ -94,7 +96,7 @@ class OvalSize (Operation):
     length = 4
 
     def parse(self, bytes):
-        self.size = datatypes.Point(bytes)
+        self.size = Point(bytes)
 
 
 class Origin (Operation):
@@ -116,8 +118,8 @@ class TextRatio (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.numerator = datatypes.Point(bytes[0:4])
-        self.denominator = datatypes.Point(bytes[4:8])
+        self.numerator = Point(bytes[0:4])
+        self.denominator = Point(bytes[4:8])
 
 
 class PenLocationHFractional (Operation):
@@ -162,7 +164,7 @@ class ShortLine (Operation):
     length = 6
 
     def parse(self, bytes):
-        self.start = datatypes.Point(bytes)
+        self.start = Point(bytes)
         self.dh = byte_to_signed_tiny_int(bytes[2])
         self.dv = byte_to_signed_tiny_int(bytes[3])
 
@@ -179,7 +181,7 @@ class LongText (VariableLengthOperation):
     length = 5
 
     def parse(self, bytes):
-        self.loc = datatypes.Point(bytes[0:4])
+        self.loc = Point(bytes[0:4])
         self.vari_length = byte_to_unsigned_tiny_int(bytes[4])
 
     def parse_variable(self, bytes):
@@ -224,14 +226,14 @@ class FrameRectangle (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class PaintRectangle (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class FrameSameRectangle (Operation):
@@ -246,14 +248,14 @@ class FrameRoundedRectangle (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class PaintRoundedRectangle (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class FrameSameRoundedRectangle (Operation):
@@ -268,14 +270,14 @@ class FrameOval (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class PaintOval (Operation):
     length = 8
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes)
+        self.rect = Rect(bytes)
 
 
 class FrameSameOval (Operation):
@@ -290,7 +292,7 @@ class FrameArc (Operation):
     length = 12
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes[0:8])
+        self.rect = Rect(bytes[0:8])
         self.startAngle = bytes_to_short(bytes[8:10])
         self.arcAngle = bytes_to_short(bytes[10:12])
 
@@ -299,7 +301,7 @@ class PaintArc (Operation):
     length = 12
 
     def parse(self, bytes):
-        self.rect = datatypes.Rect(bytes[0:8])
+        self.rect = Rect(bytes[0:8])
         self.startAngle = bytes_to_short(bytes[8:10])
         self.arcAngle = bytes_to_short(bytes[10:12])
 

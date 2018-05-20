@@ -18,11 +18,15 @@ def bytes_to_string(bytes):
 
 
 def byte_to_unsigned_tiny_int(byte):
-    return struct.unpack('>h', '\x00' + byte)[0]
+    return byte
+    # tiny_int = b"\x00%d" % byte
+    # print("Len: " + str(len(tiny_int)))
+    # print("Tiny int: " + str(tiny_int))
+    # return struct.unpack('>h', tiny_int)[0]
 
 
 def byte_to_signed_tiny_int(byte):
-    num = byte_to_unsigned_tiny_int(byte)
+    num = byte # byte_to_unsigned_tiny_int(byte)
     if num > 127:
         return 0 - num
     return num

@@ -1,5 +1,5 @@
 from decimal import *
-from datatypes import *
+from .datatypes import *
 from lxml import etree as ET
 import shlex
 
@@ -24,11 +24,13 @@ class Converter:
         self.author = None         # Map author
         self.description = None    # Map description
 
+        self.replace_vars = {}     # Dict of replacement variable values
         self.goodies = []          # List of all goodies
         self.incarnators = []      # List of all incarnators
         self.teleporters = []      # List of all teleporters
         self.blocks = []           # List of all static blocks
         self.ramps = []            # List of all static ramps
+        self.free_solids = []      # List of all free solids
         self.g_vars = []           # List of globally concerned objects
         self.enums = {}            # Dict of all enums
 
@@ -254,9 +256,9 @@ class Converter:
             elif thisText:
                 if hasattr(op, 'text'):
                     if lastText:
-                        self.cur_text += " " + op.text
+                        self.cur_text += " " + op.text.decode('macintosh')
                     else:
-                        self.cur_text = op.text
+                        self.cur_text = op.text.decode('macintosh')
 
             if thisText:
                 lastText = True
@@ -281,13 +283,16 @@ class Converter:
         for good in self.goodies:
             good.to_xml(mapEl)
 
+        for fs in self.free_solids:
+            fs.to_xml(mapEl)
+
         if self.author:
             mapEl.set('designer', self.author)
         if self.description:
             mapEl.set('description', self.description)
 
         # ET.dump(mapEl)
-        return ET.tostring(mapEl)
+        return mapEl
 
     def create_block(self, rect, corner_radius=0):
         self.last_rect = rect
@@ -410,6 +415,9 @@ class Converter:
             self.tagline = value
         elif key == 'pointsToThickness':
             self.pixel_to_thickness = Decimal(value)
+        else:
+            print(key, value)
+            self.replace_vars[key] = value
 
     def parse_adjust(self, word):
         if word == "SkyColor":
@@ -422,34 +430,56 @@ class Converter:
             g.color = self.cur_arc.fill
             self.g_vars.append(g)
 
-    def parse_object(self, object):
+    def parse_object(self, the_obj):
 
-        type = object['type']
+        type = the_obj['type']
         if type == "Incarnator":
             inc = Incarnator()
             inc.location = self.cur_arc.center
-            if 'y' in object:
-                inc.location.y += Decimal(object['y'])
+            if 'y' in the_obj:
+                inc.location.y += Decimal(the_obj['y'])
             inc.heading = self.cur_arc.heading
             self.incarnators.append(inc)
+
+        elif type == "FreeSolid":
+            fs = FreeSolid()
+            fs.location = self.cur_arc.center
+            if 'y' in the_obj:
+                fs.location.y = Decimal(the_obj['y'])
+
+            if 'shape' in the_obj:
+                fs.shape = the_obj['shape']
+
+            if 'shotPower' in the_obj:
+                fs.power = the_obj['shotPower']
+
+            if 'mass' in the_obj:
+                fs.mass = Decimal(the_obj['mass'])
+
+            if 'customGravity' in the_obj:
+                fs.relative_gravity = Decimal(the_obj['customGravity'])
+
+            fs.heading = self.cur_arc.heading
+            self.free_solids.append(fs)
+
         elif type == "Goody":
             good = Goody()
             good.location = self.cur_arc.center
 
-            if 'y' in object:
-                good.location.y += Decimal(object['y'])
+            if 'y' in the_obj:
+                good.location.y += Decimal(the_obj['y'])
 
-            if 'grenades' in object:
-                good.grenades = object['grenades']
+            if 'grenades' in the_obj:
+                good.grenades = the_obj['grenades']
 
-            if 'missiles' in object:
-                good.missiles = object['missiles']
+            if 'missiles' in the_obj:
+                good.missiles = the_obj['missiles']
 
-            if 'shape' in object:
-                good.model = self.translate_model(object['shape'])
+            if 'shape' in the_obj:
+                good.model = the_obj['shape']
 
-            if 'speed' in object:
-                good.spin.x = object['speed']
+            if 'speed' in the_obj:
+                good.spin.x = the_obj['speed']
 
             self.goodies.append(good)
         elif type == "Ramp":
@@ -457,18 +487,18 @@ class Converter:
             ramp = Ramp()
             block = self.blocks.pop()
             arc = self.cur_arc
-            if 'deltaY' in object:
-                deltaY = Decimal(object['deltaY'])
+            if 'deltaY' in the_obj:
+                deltaY = Decimal(the_obj['deltaY'])
             else:
                 deltaY = 1
             ramp.color = arc.fill
 
-            if 'y' in object:
-                y = Decimal(object['y'])
+            if 'y' in the_obj:
+                y = Decimal(the_obj['y'])
             else:
                 y = Decimal(0)
-            if 'thickness' in object:
-                ramp.thickness = Decimal(object['thickness'])
+            if 'thickness' in the_obj:
+                ramp.thickness = Decimal(the_obj['thickness'])
             else:
                 ramp.thickness = block.rounding
 
@@ -514,14 +544,3 @@ class Converter:
 
     def scale_and_snap(self, dec):
         return (dec / Converter.SCALE).quantize(Converter.SNAP)
-
-    def translate_model(self, shape):
-        models = {
-            'bspMissile': 'Missile',
-            'bspGrenade': 'Grenade'
-        }
-
-        if shape in models:
-            return models[shape]
-
-        return 'StandardPill'

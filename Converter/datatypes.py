@@ -28,7 +28,7 @@ class Color (object):
                 str(self.blue))
 
 
-class Point3D(object):
+class Point3D (object):
 
     def __init__(self):
         self.x = 0
@@ -93,7 +93,7 @@ class Goody (object):
         self.grenades = 0
         self.missiles = 0
         self.respawn = 30
-        self.model = None
+        self.shape = None
         self.spin = Point3D()
 
     def to_xml(self, tree):
@@ -103,7 +103,7 @@ class Goody (object):
         el.set('missiles', str(self.missiles))
         el.set('respawn', str(self.respawn))
         el.set('spin', str(self.spin))
-        el.set('model', str(self.model))
+        el.set('shape', str(self.shape))
 
 
 class Incarnator (object):
@@ -117,7 +117,7 @@ class Incarnator (object):
         el.set('location', str(self.location))
         el.set('heading', str(self.heading))
 
-class SkyColor(object):
+class SkyColor (object):
 
     def __init__(self):
         self.horizon = Color()
@@ -137,3 +137,35 @@ class GroundColor (object):
     def to_xml(self, tree):
         el = ET.SubElement(tree, "ground")
         el.set("color", str(self.color))
+
+
+class FreeSolid (object):
+    def __init__(self):
+        self.color = Color()
+        self.location = Point3D()
+        self.heading = 0
+        self.power = 4
+        self.mass = 1
+        self.relative_gravity = 1
+        self.shape = None
+
+    def to_xml(self, tree):
+        fsel = ET.SubElement(tree, "freesolid")
+        fsel.set("power", str(self.power))
+        fsel.set("location", str(self.location))
+        fsel.set("color", str(self.color))
+        fsel.set("mass", str(self.mass))
+        fsel.set("relativeGravity", str(self.relative_gravity))
+        if self.shape == "bspW1x1":
+            block = Block()
+            block.size = Point3D()
+            block.size.x = 5
+            block.size.y = 3
+            block.size.z = 5
+            block.center = self.location
+            block.center.y += block.size.y/Decimal(2)
+            block.color = self.color
+            block.to_xml(fsel)
+        else:
+            fsel.set("shape", str(self.shape))
+

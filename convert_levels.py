@@ -1,7 +1,7 @@
 from Converter import resource
 from Converter.converter import Converter
 import Converter.pict.reader as pReader
-
+from lxml import etree
 import argparse
 import sys
 
@@ -11,13 +11,13 @@ def try_read(file):
     data = f.read()
 
     if len(data) == 0:
-        print "Couldn't read resource fork directly"
+        print("Couldn't read resource fork directly")
 
         f = open(file + '/..namedfork/rsrc', 'rb')
         data = f.read()
 
         if len(data) == 0:
-            print "Couldn't read resource fork from /..namedfork/"
+            print("Couldn't read resource fork from /..namedfork/")
             return False
         else:
             return data
@@ -28,7 +28,7 @@ def try_read(file):
 def get_resources(file):
     data = try_read(file)
     if data is False:
-        print "No data to read"
+        print("No data to read")
         sys.exit(1)
     reader = resource.Reader()
     resources = reader.parse(data)
@@ -41,8 +41,10 @@ def convert_map(pict):
         ops = pReader.parse(pict['data'])
         conv = Converter()
         mapxml = conv.convert(ops)
-        f = open(pict['name'] + '.xml', 'w')
-        f.write(str(mapxml))
+        filename = pict['name'].decode('macintosh') + '.xml'
+        xmlstring = etree.tostring(mapxml, pretty_print=True).decode('macintosh')
+        f = open(filename, 'w')
+        f.write(xmlstring)
         f.close()
 
 
@@ -56,5 +58,5 @@ if __name__ == '__main__':
     # print resources.keys()
     # print resources['TMPL']
     # print resources['LEDI'][128]['data']
-
-    convert_map(resources['PICT'])
+    print(resources.keys())
+    convert_map(resources[b'PICT'])

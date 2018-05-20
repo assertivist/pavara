@@ -1,4 +1,4 @@
-import operations
+from .operations import *
 import binascii
 from Converter.helpers import *
 
@@ -6,18 +6,18 @@ from Converter.helpers import *
 def parse(pict):
     # The first 40 bytes are header information
     if bytes_to_int(pict[10:14]) != 0x001102ff:
-        print "ERROR: Not a version 2 PICT"
+        print("ERROR: Not a version 2 PICT")
         return
-        
+
     data = pict[40:]
 
     ops = []
     while len(data) > 0:
         curData = data
         opcode = bytes_to_short(data[:2])
-        op = operations.Factory.get_op(opcode)
+        op = Factory.get_op(opcode)
         if op is None:
-            print 'ERROR: Unknown opcode ' + str(hex(opcode))
+            print('ERROR: Unknown opcode ' + str(hex(opcode)))
             return
 
         #if isinstance(op, operations.VariableReserved):
@@ -32,7 +32,7 @@ def parse(pict):
             data = data[length:]
 
         vari_length = 0
-        if isinstance(op, operations.VariableLengthOperation):
+        if isinstance(op, VariableLengthOperation):
             vari_length = op.get_variable_length()
             op.parse_variable(data[:vari_length])
             data = data[vari_length:]
@@ -43,13 +43,13 @@ def parse(pict):
         # for a null byte (which must be there, by the spec)
         if (vari_length + length) % 2:
             if not byte_to_signed_tiny_int(data[0]) == 0x00:
-                print 'ERROR: Null byte expected'
-                print binascii.hexlify(curData)
+                print('ERROR: Null byte expected')
+                print(binascii.hexlify(curData))
                 return
             data = data[1:]
         ops.append(op)
 
-        if isinstance(op, operations.EndPict):
+        if isinstance(op, EndPict):
             break
 
     return ops
